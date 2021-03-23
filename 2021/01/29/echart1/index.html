@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    echart实现timeline+map+graph组合可视化图表 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-echart1" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  echart实现timeline+map+graph组合可视化图表
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/01/29/echart1/" class="article-date">
+  <time datetime="2021-01-29T14:36:31.000Z" itemprop="datePublished">2021-01-29</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/%E8%AF%BE%E7%A8%8B%E4%BD%9C%E4%B8%9A/">课程作业</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>是这学期前端课（数据可视化）的一部分图表，实现了每月疫情地图+每月微博热点复合展示，用timeline组件动态播放每个月的数据。</p>
+<span id="more"></span>
+
+<p>这个组队的project拿了课程的二等奖，也帮助我以百分制里99分的成绩拿到了满绩，还是比较快乐的，于是来记录一下。</p>
+<h2 id="效果展示"><a href="#效果展示" class="headerlink" title="效果展示"></a>效果展示</h2><hr>
+<p>废话不多说先上效果：</p>
+<p><img src="gif.gif" alt="gif"></p>
+<p>左半部分是每月现存疫情确诊数，右边是相对应的每月热点信息，气泡大小表示热度的高低，可以展示疫情情况对当月社会热点的影响。timeline组件动态显示每月的情况，2000毫秒变换一次月份。</p>
+<h2 id="前期准备"><a href="#前期准备" class="headerlink" title="前期准备"></a>前期准备</h2><hr>
+<h3 id="图表"><a href="#图表" class="headerlink" title="图表"></a>图表</h3><p>主要使用的是百度echart团队的作品修改而来，网址：</p>
+<p><a target="_blank" rel="noopener" href="https://echarts.apache.org/examples/en/index.html">https://echarts.apache.org/examples/en/index.html</a></p>
+<p>基本上各种echart组件都有，对于我这种需要几天速成一个project</p>
+<ul>
+<li><p>map</p>
+</li>
+<li><p>timeline</p>
+</li>
+<li><p>graph</p>
+<p>本来一开始使用wordcloud来展示每月热点，但是发现echart3已经不支持wordcloud了。在网上查了些导入wordcloud的资料，试了俩小时没有成功导入。后续想到使用graph展示热点信息，效果也不错。</p>
+</li>
+</ul>
+<h3 id="数据"><a href="#数据" class="headerlink" title="数据"></a>数据</h3><p>数据一部分是自己从微博上爬虫得来的（热点信息），一部分是在github上仓库里找到的（疫情地图数据）。</p>
+<p>提供几个我用到的GitHub仓库：</p>
+<p>【全国<em>新</em>型<em>冠</em>状肺炎疫情每日数据动态】<a target="_blank" rel="noopener" href="https://github.com/JackieZheng/2019-nCoV">https://github.com/JackieZheng/2019-nCoV</a></p>
+<p>【2019新型冠状病毒疫情实时爬虫】<a target="_blank" rel="noopener" href="https://github.com/BlankerL/DXY-COVID-19-Crawler">https://github.com/BlankerL/DXY-COVID-19-Crawler</a></p>
+<h2 id="关键部分的代码"><a href="#关键部分的代码" class="headerlink" title="关键部分的代码"></a>关键部分的代码</h2><hr>
+<p>使用timeline的options属性来实现动态和组合。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line">options:[</span><br><span class="line">            &#123;</span><br><span class="line">                title: &#123;</span><br><span class="line">                    text: <span class="string">&#x27;January, 2020&#x27;</span>,</span><br><span class="line">                    itemGap: <span class="number">10</span>,</span><br><span class="line">                    textStyle: &#123;</span><br><span class="line">                        fontFamily: <span class="string">&#x27;\&quot;Merriweather\&quot;&#x27;</span>,</span><br><span class="line">                        fontWeight: <span class="string">&#x27;bold&#x27;</span>,</span><br><span class="line">                        fontSize: <span class="number">35</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    left: <span class="string">&#x27;left&#x27;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                series: [</span><br><span class="line">                    &#123;<span class="attr">data</span>: data1&#125;,</span><br><span class="line">                    &#123;<span class="attr">data</span>:hot1&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;, </span><br><span class="line">            &#123;</span><br><span class="line">                title: &#123;</span><br><span class="line">                    text: <span class="string">&#x27;February, 2020&#x27;</span>,</span><br><span class="line">                    itemGap: <span class="number">10</span>,</span><br><span class="line">                    textStyle: &#123;</span><br><span class="line">                        fontFamily: <span class="string">&#x27;\&quot;Merriweather\&quot;&#x27;</span>,</span><br><span class="line">                        fontWeight: <span class="string">&#x27;bold&#x27;</span>,</span><br><span class="line">                        fontSize: <span class="number">35</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    left: <span class="string">&#x27;left&#x27;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                series: [</span><br><span class="line">                    &#123;<span class="attr">data</span>: data2&#125;,</span><br><span class="line">                    &#123;<span class="attr">data</span>:hot2&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;,        </span><br><span class="line">            &#123;</span><br><span class="line">                title: &#123;</span><br><span class="line">                    text: <span class="string">&#x27;March, 2020&#x27;</span>,</span><br><span class="line">                    itemGap: <span class="number">10</span>,</span><br><span class="line">                    textStyle: &#123;</span><br><span class="line">                        fontFamily: <span class="string">&#x27;\&quot;Merriweather\&quot;&#x27;</span>,</span><br><span class="line">                        fontWeight: <span class="string">&#x27;bold&#x27;</span>,</span><br><span class="line">                        fontSize: <span class="number">35</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    left: <span class="string">&#x27;left&#x27;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                series: [</span><br><span class="line">                    &#123;<span class="attr">data</span>: data3&#125;,</span><br><span class="line">                    &#123;<span class="attr">data</span>:hot3&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                title: &#123;</span><br><span class="line">                    text: <span class="string">&#x27;April, 2020&#x27;</span>,</span><br><span class="line">                    itemGap: <span class="number">10</span>,</span><br><span class="line">                    textStyle: &#123;</span><br><span class="line">                        fontFamily: <span class="string">&#x27;\&quot;Merriweather\&quot;&#x27;</span>,</span><br><span class="line">                        fontWeight: <span class="string">&#x27;bold&#x27;</span>,</span><br><span class="line">                        fontSize: <span class="number">35</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    left: <span class="string">&#x27;left&#x27;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                series: [</span><br><span class="line">                    &#123;<span class="attr">data</span>: data4&#125;,</span><br><span class="line">                    &#123;<span class="attr">data</span>:hot4&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;,  </span><br><span class="line">            &#123;</span><br><span class="line">                title: &#123;</span><br><span class="line">                    text: <span class="string">&#x27;May, 2020&#x27;</span>,</span><br><span class="line">                    itemGap: <span class="number">10</span>,</span><br><span class="line">                    textStyle: &#123;</span><br><span class="line">                        fontFamily: <span class="string">&#x27;\&quot;Merriweather\&quot;&#x27;</span>,</span><br><span class="line">                        fontWeight: <span class="string">&#x27;bold&#x27;</span>,</span><br><span class="line">                        fontSize: <span class="number">35</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    left: <span class="string">&#x27;left&#x27;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                series: [</span><br><span class="line">                    &#123;<span class="attr">data</span>: data5&#125;,</span><br><span class="line">                    &#123;<span class="attr">data</span>:hot5&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                title: &#123;</span><br><span class="line">                    text: <span class="string">&#x27;June, 2020&#x27;</span>,</span><br><span class="line">                    itemGap: <span class="number">10</span>,</span><br><span class="line">                    textStyle: &#123;</span><br><span class="line">                        fontFamily: <span class="string">&#x27;\&quot;Merriweather\&quot;&#x27;</span>,</span><br><span class="line">                        fontWeight: <span class="string">&#x27;bold&#x27;</span>,</span><br><span class="line">                        fontSize: <span class="number">35</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    left: <span class="string">&#x27;left&#x27;</span></span><br><span class="line">                &#125;,</span><br><span class="line">                series: [</span><br><span class="line">                    &#123;<span class="attr">data</span>: data6&#125;,</span><br><span class="line">                    &#123;<span class="attr">data</span>:hot6&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;,</span><br><span class="line"></span><br><span class="line">        ]</span><br></pre></td></tr></table></figure>
+
+<p>通过上述代码就可以实现组件的组合，但是为了美观还需要指定每个组件的位置。</p>
+<p>map图表位置和大小的显示样式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">layoutCenter: [<span class="string">&#x27;45%&#x27;</span>, <span class="string">&#x27;50%&#x27;</span>],<span class="comment">//距离左右，上下距离的百分比</span></span><br><span class="line">layoutSize:<span class="string">&#x27;115%&#x27;</span>,<span class="comment">//map百分比大小</span></span><br></pre></td></tr></table></figure>
+
+<p>graph的图表位置显示样式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">top: <span class="string">&#x27;25%&#x27;</span>,             <span class="comment">// 图表距离容器顶部的距离</span></span><br><span class="line"><span class="comment">// right:&#x27;100%&#x27;,</span></span><br><span class="line">left:<span class="string">&#x27;70%&#x27;</span>,</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2021/01/29/echart1/" data-id="ckmm103eu000ilgtz58e1emu9" class="article-share-link">
+        Share
+      </a>
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/echart/" rel="tag">echart</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag">前端</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  <a href="/2021/01/29/ca_report/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      RVO群组避障动画
+      
+    </div>
+  </a>
+  
+  
+  <a href="/2021/01/28/cv_report2/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">opencv实现圆与直线的检测(Contour/line extraction)</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+
+</html>

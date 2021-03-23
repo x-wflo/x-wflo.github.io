@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    opencv实现圆与直线的检测(Contour/line extraction) |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-cv_report2" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  opencv实现圆与直线的检测(Contour/line extraction)
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/01/28/cv_report2/" class="article-date">
+  <time datetime="2021-01-28T14:36:31.000Z" itemprop="datePublished">2021-01-28</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/%E8%AF%BE%E7%A8%8B%E4%BD%9C%E4%B8%9A/">课程作业</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>使用opencv来实现圆与直线的检测(不依赖opencv库中自带函数)</p>
+<span id="more"></span>
+
+
+
+<h2 id="实验目的和要求"><a href="#实验目的和要求" class="headerlink" title="实验目的和要求"></a>实验目的和要求</h2><hr>
+<p>对输入的一张彩色图像，检测其中的圆形与直线，并将检测结果显示在原图上。</p>
+<h4 id="opencv实现以下功能："><a href="#opencv实现以下功能：" class="headerlink" title="opencv实现以下功能："></a>opencv实现以下功能：</h4><ol>
+<li>检测算法的核心功能需要自己写代码实现，不能调用OpenCV或其他SDK里与圆形/直线检测相关的函数;如果要用到边缘检测，这个可以调用OpenCV函数。</li>
+<li>在原图上显示最终的检测结果;</li>
+<li>单独显示一些关键的中间结果;</li>
+<li>必须对指定的三张测试图像(coin、seal、highway)调试结果。此外，自己还可以自愿加一些测试图像</li>
+</ol>
+<h2 id="实验原理"><a href="#实验原理" class="headerlink" title="实验原理"></a>实验原理</h2><hr>
+<p>在具体实现过程中，我们有两个部分，一个是直线的检测，一个是圆形的检测。</p>
+<p>在直线、圆形的检测过程中，我们采用最小二乘法图像拟合来进行本次实验。圆和直线的处理方式是共通的，大致上可以分为：</p>
+<ul>
+<li><p>图片载入</p>
+</li>
+<li><p>图像滤波除去干扰杂点和噪点</p>
+</li>
+<li><p>使用canny算子对图形进行边缘提取</p>
+</li>
+<li><p>图像形态学进行开闭操作加强边缘</p>
+</li>
+<li><p>提取边缘成为点集合</p>
+</li>
+<li><p>根据点集合拟合直线，并排除分布不符合条件的点集</p>
+</li>
+<li><p>输出结果</p>
+</li>
+</ul>
+<h3 id="Canny算子进行边缘提取"><a href="#Canny算子进行边缘提取" class="headerlink" title="Canny算子进行边缘提取"></a>Canny算子进行边缘提取</h3><p>canny边缘检测实际上是一种一阶微分算子检测算法，它几乎是边缘检测算子中最为常用的一种。</p>
+<p>Canny边缘检测主要分四步进行：</p>
+<ol>
+<li>去噪声；</li>
+<li>计算梯度与方向角；</li>
+<li>非最大值抑制；</li>
+<li>滞后阈值化；</li>
+</ol>
+<p>其中前两步先用一个高斯滤波器对图像进行滤波，然后用Sobel水平和竖直检测子与图像卷积，来计算梯度和方向角。</p>
+<h3 id="轮廓提取"><a href="#轮廓提取" class="headerlink" title="轮廓提取"></a>轮廓提取</h3><p>通过Canny算子提取边缘后，我们可以通过使用Opencv中的findContours函数，检测出物体的轮廓并储存在点集合中。</p>
+<h3 id="最小二乘法拟合"><a href="#最小二乘法拟合" class="headerlink" title="最小二乘法拟合"></a>最小二乘法拟合</h3><p>最小二乘法（least squares method），又称最小平方法，是一种数学优化建模方法。它通过最小化误差的平方和寻找数据的最佳函数匹配。</p>
+<p>利用最小二乘法可以简便的求得未知的数据，并使得求得的数据与实际数据之间误差的平方和为最小。</p>
+<h4 id="直线拟合原理"><a href="#直线拟合原理" class="headerlink" title="直线拟合原理"></a>直线拟合原理</h4><p>假设有点 $ i = 1,2,3,……n$ ,求近似曲线 $y=φ(x)$ ，并且使得$y=φ(x)$与$y=f(x)$的平方偏差和最小。</p>
+<p>我们将偏差定义为：<br>$$<br>e_i=y_i-φ(x_i)<br>$$<br><img src="v2-5dda0ecd81ddea0cab8ae8ea1ac634a3_720w.jpg" alt="img"></p>
+<p>现在有点$(x_1,y_1),(x_2,y_2),…(x_n,y_n),$设拟合多项式为：$y=ax+b$,则平方偏差和如下：<br>$$<br>e^2=\sum_{i=1}^{n}(y_i-y)^2<br>$$<br> 带入直线公式即：<br>$$<br>e^2=\sum_{i=1}^n(y_i-(ax_i+b))^2<br>$$<br>我们需要找到最好一组$a,b$，使得$e^2$的值最小，所以以上函数是一个关于$a,b$的函数。最小二乘法对各个变量求偏导，使得偏导值为0，即可得到最小值，因为e是关于a b的函数，导数为0的点必定是最小值，分别对 a b求偏导可以得到：<br>$$<br>\frac{\partial e}{\partial a}=\sum_{i=1}^n2(y_i-(ax_i+b)(-x_i))=0 \<br>=\sum_{i=1}^n(ax_i^2+bx_i-y_ix_i)=0\<br>\frac{\partial e}{\partial b}=\sum_{i=1}^n2(y_i-(ax_i+b)(-1))=0 \<br>=\sum_{i=1}^n(ax_i+b-y_i)=0\<br>$$<br>得到等式$$(\sum_{i=1}^nx_i^2)a+(\sum_{i=1}^nx_i)b=\sum_{i=1}^ny_ix_i$$ 和 $(\sum_{i=1}^nx_i)a+nb=\sum_{i=1}^ny_i$。将方程组连立后转为矩阵得</p>
+<p>$$<br>\left[<br>\begin{matrix}<br>\sum_{i=1}^nx_i^2 &amp; \sum_{i=1}^nx_i\ \<br>\sum_{i=1}^nx_i &amp; n<br>\end{matrix}<br>\right]<br>\left[<br>\begin{matrix}<br>a \<br>b<br>\end{matrix}<br>\right]=<br>\left[<br>\begin{matrix}<br>\sum_{i=1}^ny_ix_i \ \<br>\sum_{i=1}^ny_i<br>\end{matrix}<br>\right]<br>$$</p>
+<p>关于此矩阵的求解，我们使用opencv自带的<code>solve</code>函数来解决。</p>
+<h4 id="椭圆拟合原理"><a href="#椭圆拟合原理" class="headerlink" title="椭圆拟合原理"></a>椭圆拟合原理</h4><p>对于椭圆的拟合，我们使用最小二乘算法构造方程，使用拉格朗日乘子进行求解。</p>
+<p>椭圆一般方程为：<br>$$<br>Ax^2<br> +Bxy+Cy^<br>2<br> +Dx+Ey+F=0<br>$$<br>对于其中每个点，我们：</p>
+<p>令$W=[A,B,C,D,E]^T,X=[x^2,xy,y^2,x,y]^T$，方程可以表达为$WX=1$。拟合椭圆最优化问题可以表示为：<br>$$<br>min||W^TX||^2=W^TXX^TW\<br>s.t. W^THW&gt;0<br>$$<br>其中常数矩阵为</p>
+<img src="image-20201210164419096.png" alt="image-20201210164419096" style="zoom: 80%;" />
+
+<p>$s.t. W^THW&gt;0$是椭圆参数约束$4AC-B^2&gt;0$。</p>
+<p>此时利用opencv的<code>solve</code>函数，使用高斯消元法就可以得到结果。</p>
+<h3 id="排除干扰点"><a href="#排除干扰点" class="headerlink" title="排除干扰点"></a>排除干扰点</h3><p>在拟合图形后，我们需要排除干扰点。这是因为部分点或许是离散的，但是拟合函数却能让他们形成我们想要的形状。如图fig1。点是离散的，虽然这个点集合也可以进行直线拟合，但是很明显其本身不是直线，是我们需要剔除的数据。</p>
+<center>
+    <img 
+    src="ba54b737f3717cf2fec01814463c4a4c.jpg">
+    <br>
+    <div style="color:orange; border-bottom: 1px solid #d9d9d9;
+    display: inline-block;
+    color: #999;
+    padding: 2px;">fig 1</div>
+</center>
+
+
+<h2 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h2><hr>
+<ul>
+<li>vs 2017</li>
+<li>opencv-4.5.0  </li>
+<li>C++</li>
+</ul>
+<h2 id="实验具体实现"><a href="#实验具体实现" class="headerlink" title="实验具体实现"></a>实验具体实现</h2><hr>
+<h3 id="基本处理"><a href="#基本处理" class="headerlink" title="基本处理"></a>基本处理</h3><p>对于输入的图片，我们首先进行基本的处理，即提取边缘和轮廓。</p>
+<h4 id="边缘提取"><a href="#边缘提取" class="headerlink" title="边缘提取"></a>边缘提取</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvCanny</span><span class="params">( InputArray image,OutputArray edges,</span></span></span><br><span class="line"><span class="function"><span class="params">				<span class="keyword">double</span> threshold1,<span class="keyword">double</span> threshold2, </span></span></span><br><span class="line"><span class="function"><span class="params">				<span class="keyword">int</span> aperture_size=<span class="number">3</span>,<span class="keyword">bool</span> L2gradient=<span class="literal">false</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>image 输入图像，这个必须是单通道的，即灰度图</li>
+<li>edges 输出的边缘图像 ，也是单通道的，但是是黑白的</li>
+<li>threshold1 第一个阈值</li>
+<li>threshold2 第二个阈值</li>
+<li>aperture_size Sobel 算子内核大小</li>
+<li>L2gradient是否采用更精确的方式计算图像梯度</li>
+</ul>
+<p>关于两个阈值参数：</p>
+<ul>
+<li>低于阈值1的像素点会被认为不是边缘；</li>
+<li>高于阈值2的像素点会被认为是边缘；</li>
+<li>在阈值1和阈值2之间的像素点,若与第2步得到的边缘像素点相邻，则被认为是边缘，否则被认为不是边缘。</li>
+</ul>
+<h4 id="轮廓提取-1"><a href="#轮廓提取-1" class="headerlink" title="轮廓提取"></a>轮廓提取</h4><p>轮廓提取主要使用opencv自带函数<code>findContours</code>来实现。具体参数如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">findContours</span>( InputOutputArray image, OutputArrayOfArrays contours,</span><br><span class="line">                              OutputArray hierarchy, <span class="keyword">int</span> mode,</span><br><span class="line">                              <span class="keyword">int</span> method, Point offset=<span class="built_in">Point</span>());</span><br></pre></td></tr></table></figure>
+
+<p><strong>第一个参数：</strong>image，单通道图像矩阵，可以是灰度图，但更常用的是二值图像，一般是经过Canny、拉普拉斯等边缘检测算子处理过的二值图像；</p>
+<p><strong>第二个参数：</strong>contours，定义为vector&lt;vector<Point>&gt; 。contours是一个向量，并且是一个双重向量,向量内每个元素保存了一组由连续的Point点构成的点的集合的向量，每一组Point点集就是一个轮廓。有多少轮廓，向量contours就有多少元素。</p>
+<p><strong>第三个参数：</strong>hierarchy，定义为<strong>“vector<Vec4i> hierarchy”</strong>，Vec4i是Vec&lt;int,4&gt;的别名，定义了一个向量内每一个元素包含了4个int型变量的向量。从定义上看，hierarchy也是一个向量，向量内每个元素保存了一个包含4个int整型的数组。向量hiararchy内的元素和轮廓向量contours内的元素是一一对应的，向量的容量相同。 hierarchy向量内每一个元素的4个int型变量——hierarchy[i][0] ~hierarchy[i][3]，分别表示第 i个轮廓的后一个轮廓、前一个轮廓、父轮廓、内嵌轮廓的索引编号。如果当前轮廓没有对应的后一个轮廓、前一个轮廓、父轮廓或内嵌轮廓的话，则hierarchy[i][0] ~hierarchy[i][3]的相应位被设置为默认值-1。</p>
+<p><strong>第四个参数：</strong>int型的mode，定义轮廓的检索模式：</p>
+<ul>
+<li>取值一：CV_RETR_EXTERNAL<strong>只检测最外围轮廓</strong>，包含在外围轮廓内的内围轮廓被忽略</li>
+<li>取值二：CV_RETR_LIST  检测所有的轮廓，包括内围、外围轮廓，但是检测到的轮廓不建立等级关系，彼此之间独立，没有等级关系，这就意味着这个检索模式下不存在父轮廓或内嵌轮廓，所以hierarchy向量内所有元素的第3、第4个分量都会被置为-1。</li>
+<li>取值三：CV_RETR_CCOMP  检测所有的轮廓，但所有轮廓只建立两个等级关系，外围为顶层，若外围内的内围轮廓还包含了其他的轮廓信息，则内围内的所有轮廓均归属于顶层。</li>
+<li>取值四：CV_RETR_TREE， 检测所有轮廓，所有轮廓建立一个等级树结构。外层轮廓包含内层轮廓，内层轮廓还可以继续包含内嵌轮廓。</li>
+</ul>
+<p><strong>第五个参数：</strong>int型的method，定义轮廓的近似方法：</p>
+<ul>
+<li>取值一：CV_CHAIN_APPROX_NONE 保存物体边界上所有连续的轮廓点到contours向量内。</li>
+<li>取值二：CV_CHAIN_APPROX_SIMPLE 仅保存轮廓的拐点信息，把所有轮廓拐点处的点保存入contours向量内，拐点与拐点之间直线段上的信息点不予保留。</li>
+<li>取值三和四：CV_CHAIN_APPROX_TC89_L1，CV_CHAIN_APPROX_TC89_KCOS使用teh-Chinl chain 近似算法。</li>
+</ul>
+<p><strong>第六个参数：</strong>Point偏移量，所有的轮廓信息相对于原始图像对应点的偏移量，相当于在每一个检测出的轮廓点上加上该偏移量，并且Point还可以是负值。</p>
+<h3 id="直线检测"><a href="#直线检测" class="headerlink" title="直线检测"></a>直线检测</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">vector&lt;Point&gt; <span class="title">myfitline</span><span class="params">(Size size,vector&lt;Point&gt;points)</span></span>&#123;</span><br><span class="line">	<span class="keyword">double</span> x_max = points[<span class="number">0</span>].x;</span><br><span class="line">	<span class="keyword">double</span> x_min = points[<span class="number">0</span>].x;</span><br><span class="line">	Mat src = Mat::<span class="built_in">zeros</span>(size, CV_8UC3);</span><br><span class="line">	<span class="comment">//构建A矩阵 </span></span><br><span class="line">	<span class="keyword">int</span> N = <span class="number">2</span>;</span><br><span class="line">	Mat A = Mat::<span class="built_in">zeros</span>(N, N, CV_64FC1);</span><br><span class="line">	<span class="keyword">int</span> num = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> row = <span class="number">0</span>; row &lt; A.rows; row++)&#123;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> col = <span class="number">0</span>; col &lt; A.cols; col++)&#123;</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; points.<span class="built_in">size</span>(); k++)&#123;</span><br><span class="line">				<span class="keyword">if</span> (points[k].x &gt; x_max) x_max = points[k].x;</span><br><span class="line">				<span class="keyword">if</span> (points[k].x &lt; x_min) x_min = points[k].x;</span><br><span class="line"></span><br><span class="line">				A.at&lt;<span class="keyword">double</span>&gt;(row, col) = A.at&lt;<span class="keyword">double</span>&gt;(row, col) + <span class="built_in">pow</span>(points[k].x, row + col);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//构建B矩阵</span></span><br><span class="line">	Mat B = Mat::<span class="built_in">zeros</span>(N, <span class="number">1</span>, CV_64FC1);</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> row = <span class="number">0</span>; row &lt; B.rows; row++)&#123;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; points.<span class="built_in">size</span>(); k++)</span><br><span class="line">		&#123;</span><br><span class="line">			B.at&lt;<span class="keyword">double</span>&gt;(row, <span class="number">0</span>) = B.at&lt;<span class="keyword">double</span>&gt;(row, <span class="number">0</span>) + <span class="built_in">pow</span>(points[k].x, row)*points[k].y;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//A*X=B</span></span><br><span class="line">	Mat X;</span><br><span class="line">	<span class="built_in">solve</span>(A, B, X, DECOMP_LU);<span class="comment">//求解</span></span><br><span class="line">	vector&lt;Point&gt;lines;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> x = <span class="number">0</span>; x &lt;=size.width; x++)&#123;				</span><br><span class="line">		<span class="keyword">double</span> y = X.at&lt;<span class="keyword">double</span>&gt;(<span class="number">0</span>, <span class="number">0</span>) + X.at&lt;<span class="keyword">double</span>&gt;(<span class="number">1</span>, <span class="number">0</span>)*x; <span class="comment">//y=ax+b</span></span><br><span class="line">		lines.<span class="built_in">push_back</span>(<span class="built_in">Point</span>(x, y));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> lines;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="solve函数"><a href="#solve函数" class="headerlink" title="solve函数"></a>solve函数</h5><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">cv::solve</span><span class="params">(InputArray	src1,</span></span></span><br><span class="line"><span class="function"><span class="params">               InputArray	src2,</span></span></span><br><span class="line"><span class="function"><span class="params">               OutputArray	dst,</span></span></span><br><span class="line"><span class="function"><span class="params">               <span class="keyword">int</span>			flags=DECOMP_LU</span></span></span><br><span class="line"><span class="function"><span class="params">			   )</span></span></span><br></pre></td></tr></table></figure>
+
+<p>src1 线性系统的左侧（相当于上面的A），src2 线性系统的右侧（相当于上面的B），dst 输出的解决方案（相当于要求解的X）,flag为使用的方法。</p>
+<h4 id="排除干扰点-1"><a href="#排除干扰点-1" class="headerlink" title="排除干扰点"></a>排除干扰点</h4><p>根据<code>slove</code>函数拟合出的直线中，有很大一部分其实为干扰直线。如果不将这些直线去除，我们的检测结果会很糟糕。</p>
+<p>针对检测结果，我们提出以下几个过滤条件：</p>
+<ul>
+<li><p>轮廓周长低于或者点个数小于20的去除</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (contours[i].<span class="built_in">size</span>() &lt; <span class="number">20</span>)<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">double</span> c = <span class="built_in">arcLength</span>(points, <span class="literal">true</span>); <span class="comment">//轮廓周长</span></span><br><span class="line"><span class="keyword">if</span> (c &lt;= <span class="number">100.0</span>) &#123;</span><br><span class="line">	vector&lt;Point&gt;lines;</span><br><span class="line">	<span class="keyword">return</span> lines;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>计算每个点和直线的平均距离方差，如果方差过大则剔除。如果只有不到90%的点距离直线比较近，则也进行剔除。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> k = points.<span class="built_in">size</span>() - <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">int</span> ori = k + <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">while</span>(k &gt;=<span class="number">0</span>) &#123;</span><br><span class="line">		<span class="keyword">double</span> e = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">double</span> y0 = X.at&lt;<span class="keyword">double</span>&gt;(<span class="number">0</span>, <span class="number">0</span>) + X.at&lt;<span class="keyword">double</span>&gt;(<span class="number">1</span>, <span class="number">0</span>)*points[k].x;</span><br><span class="line">		e = <span class="built_in">pow</span>(points[k].y - y0, <span class="number">2</span>);</span><br><span class="line">		<span class="keyword">if</span> (e &gt; <span class="number">100</span>) points.<span class="built_in">pop_back</span>();</span><br><span class="line">		k--;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">int</span> now = points.<span class="built_in">size</span>();</span><br><span class="line">	<span class="keyword">double</span> f = points.<span class="built_in">size</span>()*<span class="number">1.0</span>/ori;</span><br><span class="line">	<span class="keyword">if</span> (f&lt;<span class="number">0.9</span>||points.<span class="built_in">size</span>()&lt;<span class="number">100</span>) &#123;</span><br><span class="line">		vector&lt;Point&gt; noResult;</span><br><span class="line">		<span class="keyword">return</span> noResult;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="生成直线"><a href="#生成直线" class="headerlink" title="生成直线"></a>生成直线</h4><p>经过排除干扰直线后，就可以生成得到的所有直线，此处使用<code>polyline</code>函数实现。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">vector&lt;Point&gt; rect =<span class="built_in">myfitline</span>(size,contours[i]); <span class="comment">//拟合</span></span><br><span class="line"><span class="keyword">if</span> (rect.<span class="built_in">size</span>() == <span class="number">0</span>) <span class="keyword">continue</span>;</span><br><span class="line"><span class="built_in">polylines</span>(src_img, rect,<span class="literal">false</span>, <span class="built_in">Scalar</span>(<span class="number">0</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="number">2</span>, <span class="number">8</span>);</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="圆检测"><a href="#圆检测" class="headerlink" title="圆检测"></a>圆检测</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">vector&lt;<span class="keyword">double</span>&gt;  <span class="title">getEllipseparGauss</span><span class="params">(vector&lt;Point&gt; vec_point)</span></span>&#123;</span><br><span class="line">	vector&lt;<span class="keyword">double</span>&gt; vec_result;</span><br><span class="line">	<span class="keyword">double</span> x3y1 = <span class="number">0</span>, x1y3 = <span class="number">0</span>, x2y2 = <span class="number">0</span>, yyy4 = <span class="number">0</span>, xxx3 = <span class="number">0</span>, xxx2 = <span class="number">0</span>, x2y1 = <span class="number">0</span>, yyy3 = <span class="number">0</span>, x1y2 = <span class="number">0</span>, yyy2 = <span class="number">0</span>, x1y1 = <span class="number">0</span>, xxx1 = <span class="number">0</span>, yyy1 = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">	<span class="keyword">int</span> N = vec_point.<span class="built_in">size</span>();</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; N; ++i)&#123;</span><br><span class="line">		<span class="keyword">double</span> xi = vec_point[i].x;</span><br><span class="line">		<span class="keyword">double</span> yi = vec_point[i].y;</span><br><span class="line">		x3y1 += xi * xi*xi*yi;</span><br><span class="line">		x1y3 += xi * yi*yi*yi;</span><br><span class="line">		x2y2 += xi * xi*yi*yi; ;</span><br><span class="line">		yyy4 += yi * yi*yi*yi;</span><br><span class="line">		xxx3 += xi * xi*xi;</span><br><span class="line">		xxx2 += xi * xi;</span><br><span class="line">		x2y1 += xi * xi*yi;</span><br><span class="line"></span><br><span class="line">		x1y2 += xi * yi*yi;</span><br><span class="line">		yyy2 += yi * yi;</span><br><span class="line">		x1y1 += xi * yi;</span><br><span class="line">		xxx1 += xi;</span><br><span class="line">		yyy1 += yi;</span><br><span class="line">		yyy3 += yi * yi*yi;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/*赋值部分，已省略*/</span></span><br><span class="line">	<span class="built_in">RGauss</span>(Ma, Md);<span class="comment">//进行高斯消元，得到的Md矩阵就是我们需要的内容。</span></span><br><span class="line">	<span class="comment">//得到的A，B，C，D，E，为椭圆一般方程中的参数</span></span><br><span class="line">	<span class="keyword">double</span> XC = (<span class="number">2</span> * B*C - A * D) / (A*A - <span class="number">4</span> * B); <span class="comment">//center.x</span></span><br><span class="line">	<span class="keyword">double</span> YC = (<span class="number">2</span> * D - A * C) / (A*A - <span class="number">4</span> * B);<span class="comment">//center.y</span></span><br><span class="line">	<span class="keyword">long</span> <span class="keyword">double</span> fenzi = <span class="number">2</span> * (A*C*D - B * C*C - D * D + <span class="number">4</span> * E*B - A * A*E);</span><br><span class="line">	<span class="keyword">long</span> <span class="keyword">double</span> fenmu = (A*A - <span class="number">4</span> * B)*(B - <span class="built_in">sqrt</span>(A*A + (<span class="number">1</span> - B)*(<span class="number">1</span> - B)) + <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">long</span> <span class="keyword">double</span> fenmu2 = (A*A - <span class="number">4</span> * B)*(B + <span class="built_in">sqrt</span>(A*A + (<span class="number">1</span> - B)*(<span class="number">1</span> - B)) + <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">double</span> XA = <span class="built_in">sqrt</span>(<span class="built_in">fabs</span>(fenzi / fenmu));<span class="comment">//long</span></span><br><span class="line">	<span class="keyword">double</span> XB = <span class="built_in">sqrt</span>(<span class="built_in">fabs</span>(fenzi / fenmu2));<span class="comment">//short</span></span><br><span class="line">	<span class="keyword">double</span> Xtheta = <span class="number">0.5</span>*<span class="built_in">atan</span>(A / (<span class="number">1</span> - B)) * <span class="number">180</span> /PI;</span><br><span class="line">	<span class="keyword">if</span> (B &lt; <span class="number">1</span>)</span><br><span class="line">		Xtheta += <span class="number">90</span>;</span><br><span class="line">	vec_result.<span class="built_in">push_back</span>(XC);</span><br><span class="line">	vec_result.<span class="built_in">push_back</span>(YC);</span><br><span class="line">	vec_result.<span class="built_in">push_back</span>(XA);</span><br><span class="line">	vec_result.<span class="built_in">push_back</span>(XB);</span><br><span class="line">	vec_result.<span class="built_in">push_back</span>(Xtheta);</span><br><span class="line">	<span class="keyword">return</span> vec_result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<p>高斯消元法：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">RGauss</span><span class="params">(<span class="keyword">const</span> vector&lt;vector&lt;<span class="keyword">double</span>&gt; &gt; Atemp, vector&lt;<span class="keyword">double</span>&gt; &amp; x)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">int</span> n = Atemp.<span class="built_in">size</span>();</span><br><span class="line">	<span class="keyword">int</span> m = Atemp[<span class="number">0</span>].<span class="built_in">size</span>();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; n; k++) &#123;</span><br><span class="line">		<span class="comment">//选主元  </span></span><br><span class="line">		<span class="keyword">double</span> max = <span class="number">-1</span>;</span><br><span class="line">		<span class="keyword">int</span> l = <span class="number">-1</span>;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = k; i &lt; n; i++)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">if</span> (<span class="built_in">abs</span>(Atemp[i][k]) &gt; max)</span><br><span class="line">			&#123;</span><br><span class="line">				max = <span class="built_in">abs</span>(Atemp[i][k]);</span><br><span class="line">				l = i;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (l != k) &#123;</span><br><span class="line">			<span class="comment">//交换系数矩阵的l行和k行  </span></span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m; i++)</span><br><span class="line">			&#123;</span><br><span class="line">				<span class="keyword">double</span> temp = Atemp[l][i];</span><br><span class="line">				Atemp[l][i] = Atemp[k][i];</span><br><span class="line">				Atemp[k][i] = temp;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">//消元  </span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = k + <span class="number">1</span>; i &lt; n; i++) &#123;</span><br><span class="line">			<span class="keyword">double</span> l = Atemp[i][k] / Atemp[k][k];</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> j = k; j &lt; m; j++)</span><br><span class="line">			&#123;</span><br><span class="line">				Atemp[i][j] = Atemp[i][j] - l * Atemp[k][j];</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//回代  </span></span><br><span class="line">	x[n - <span class="number">1</span>] = Atemp[n - <span class="number">1</span>][m - <span class="number">1</span>] / Atemp[n - <span class="number">1</span>][m - <span class="number">2</span>];</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> k = n - <span class="number">2</span>; k &gt;= <span class="number">0</span>; k--)&#123;</span><br><span class="line">		<span class="keyword">double</span> s = <span class="number">0.0</span>;</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j = k + <span class="number">1</span>; j &lt; n; j++)&#123;</span><br><span class="line">			s += Atemp[k][j] * x[j];</span><br><span class="line">		&#125;</span><br><span class="line">		x[k] = (Atemp[k][m - <span class="number">1</span>] - s) / Atemp[k][k];</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="去除干扰点"><a href="#去除干扰点" class="headerlink" title="去除干扰点"></a>去除干扰点</h4><p>针对检测结果，我们提出以下几个过滤条件：</p>
+<ul>
+<li>去掉过小和过大圆</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!(MinR &lt; radius &amp;&amp; radius &lt; MaxR)) &#123;</span><br><span class="line">	<span class="keyword">continue</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>因为我们运用的是拟合椭圆的条件，因此需要在里面找到圆</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> ratio = <span class="built_in"><span class="keyword">float</span></span>(rect[<span class="number">3</span>]) / <span class="built_in"><span class="keyword">float</span></span>(rect[<span class="number">2</span>]);</span><br><span class="line"><span class="keyword">if</span> (ratio &lt; <span class="number">1.1</span> &amp;&amp; ratio &gt; <span class="number">0.95</span>)&#123;</span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">ComputeVariance</span>(contours[i], <span class="built_in">Point</span>(rect[<span class="number">0</span>],rect[<span class="number">1</span>])))&#123;</span><br><span class="line">	<span class="built_in">circle</span>(result_img,<span class="built_in">Point</span>(rect[<span class="number">0</span>],rect[<span class="number">1</span>]), rect[<span class="number">3</span>],<span class="built_in">Scalar</span>(<span class="number">0</span>, <span class="number">255</span>, <span class="number">255</span>), <span class="number">2</span>);</span><br><span class="line">	<span class="built_in">circle</span>(result_img, <span class="built_in">Point</span>(rect[<span class="number">0</span>], rect[<span class="number">1</span>]), <span class="number">2</span>, <span class="built_in">Scalar</span>(<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>), <span class="number">2</span>, <span class="number">8</span>, <span class="number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>根据以上条件拟合出来的圆存在一个问题，即如果是正方矩形，也符合以上条件。因此需要添加新条件排除此种可能。</li>
+</ul>
+<center><img src="bug1.png" alt="bug1" style="zoom: 28%;" /><img src="2-1607746665706.png" alt="2" style="zoom: 28%;" /></center>
+
+<center>实现从第一张图到第二张图</center>
+
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">ComputeVariance</span><span class="params">(vector&lt;Point&gt; theContour, Point2f theCenter)</span> </span>&#123;</span><br><span class="line">	vector&lt;<span class="keyword">int</span>&gt; result;</span><br><span class="line">	<span class="keyword">double</span> s = cv::<span class="built_in">contourArea</span>(theContour);<span class="comment">//轮廓面积</span></span><br><span class="line">	<span class="keyword">double</span> c = cv::<span class="built_in">arcLength</span>(theContour, <span class="literal">true</span>); <span class="comment">//轮廓周长</span></span><br><span class="line">	<span class="keyword">float</span> afa = <span class="number">4</span> * PI*s / (c*c); <span class="comment">//afa计算</span></span><br><span class="line">	afa = <span class="built_in">abs</span>(afa - <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">if</span> (afa &gt; <span class="number">0.2</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">	theContour[<span class="number">0</span>] = <span class="built_in">Point</span>(<span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<h2 id="实验结果分析"><a href="#实验结果分析" class="headerlink" title="实验结果分析"></a>实验结果分析</h2><hr>
+<p>通过调整各个参数，可以获得结果如下：</p>
+<h3 id="直线检测-1"><a href="#直线检测-1" class="headerlink" title="直线检测"></a>直线检测</h3><p><img src="result_line2-1607583253687.jpg" alt="result_line2"></p>
+<p><img src="result_line.jpg" alt="result_line"></p>
+<h3 id="圆形检测"><a href="#圆形检测" class="headerlink" title="圆形检测"></a>圆形检测</h3><p><img src="image-20201212122811902.png" alt="image-20201212122811902"></p>
+<p><img src="dst.bmp" alt="dst"></p>
+<p><img src="2.png" alt="2"></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2021/01/28/cv_report2/" data-id="ckmm103ev000jlgtz6nc5ekit" class="article-share-link">
+        Share
+      </a>
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ComputerVision/" rel="tag">ComputerVision</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/opencv/" rel="tag">opencv</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  <a href="/2021/01/29/echart1/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      echart实现timeline+map+graph组合可视化图表
+      
+    </div>
+  </a>
+  
+  
+  <a href="/2021/01/28/description/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">搭建个人博客了</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+
+</html>

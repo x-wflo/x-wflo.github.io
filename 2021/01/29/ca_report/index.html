@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    RVO群组避障动画 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-ca_report" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  RVO群组避障动画
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/01/29/ca_report/" class="article-date">
+  <time datetime="2021-01-29T14:36:31.000Z" itemprop="datePublished">2021-01-29</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/%E8%AF%BE%E7%A8%8B%E4%BD%9C%E4%B8%9A/">课程作业</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>在python中，通过底层避障算法RVO实现多个智能体间的移动、互相躲避。</p>
+<span id="more"></span>
+
+
+
+<h2 id="实验目的和要求"><a href="#实验目的和要求" class="headerlink" title="实验目的和要求"></a>实验目的和要求</h2><p>实现群组动画：</p>
+<ul>
+<li>实现基于RVO的群组动画。</li>
+<li>以基于RVO的方式完成动画中每个点的路径规划，中途做到每个点都避开其他点、障碍物，实现无碰撞。</li>
+</ul>
+<h2 id="实验内容和原理"><a href="#实验内容和原理" class="headerlink" title="实验内容和原理"></a>实验内容和原理</h2><h3 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容:"></a>实验内容:</h3><ul>
+<li>预处理，计算出每个点的起点与终点</li>
+<li>计算各个点的初速度</li>
+<li>根据其他点、障碍物的位置不断修改当前的速度，找到实现无碰撞的速度和方向</li>
+<li>按以上步骤循环，直到每个点都达到终点</li>
+<li>输出结果</li>
+</ul>
+<h3 id="实验原理："><a href="#实验原理：" class="headerlink" title="实验原理："></a>实验原理：</h3><p>VO和RVO是经典的底层避障算法。其中VO是最经典的，RVO则在VO的基础上进行了一些改进。</p>
+<h4 id="VO算法"><a href="#VO算法" class="headerlink" title="VO算法"></a>VO算法</h4><p><img src="prob_disc.png" alt="问题描述"></p>
+<p>要保证A与B不发生碰撞，VO算法的选择是将点A看作质点，B看作B’（A的半径加上B的半径），选择跟B‘不相交的速度方向。以后只要在每个周期里面，都选择不在VO的速度，就能够保证不会碰撞。</p>
+<p><img src="prob_sol.png" alt="解决办法"></p>
+<center>如图所示，排除Va'，留下Va</center>
+
+
+
+<p>假设场景中有2个虚拟人A, B, 其半径和位置分别为$R_A, R_B, P_A, P_B,$ 速度分别为$V_A, V_B$。</p>
+<p>虚拟人A, B把彼此当作具有一定速度的障碍物, 根据位姿空间理论，虚拟人A可被缩小为一个点$A^N$, 而虚拟人B可被扩大成半径为$R_B^N$的圆形$B^N$, 其中, $R_B^N=R_A+R_B$.根据相对运动理论, 假设B的新速度$V_B^N=0$, 即虚拟人B静止不动, 为保证运动的等价性, A的相对速度则为$V_A^N=V_A-V_B$。</p>
+<img src="DNDX201102040_11700.jpg" alt="DNDX201102040_11700" style="zoom: 50%;" />
+
+<h4 id="RVO算法"><a href="#RVO算法" class="headerlink" title="RVO算法"></a>RVO算法</h4><p>核心思想: 优化VO思想, 假定对方也会采取避障行为, 缩小(average VO)速度。</p>
+<p>相对速度障碍物 (RVO) 的定义:所有属于ΦVO的速度与当前速度VA的均值的集合, 其数学表述为</p>
+<img src="DNDX201102040_12100.jpg" alt="DNDX201102040_12100" style="zoom:50%;" />
+
+<p>其几何表示为:将$Φ_{VO}$的端点从$V_B$移到$V_B$与$V_A$矢量和的一半, 如图3 (d) 中虚线区域所示.根据相对速度障碍物的定义, 下一时刻速度$V_A^N$只要不属于$ΦR_{VO}$即可保证虚拟人之间不会发生碰撞。</p>
+<h4 id="RVO对静态障碍的避碰"><a href="#RVO对静态障碍的避碰" class="headerlink" title="RVO对静态障碍的避碰"></a>RVO对静态障碍的避碰</h4><p>相对速度障碍物方法不仅可以解决虚拟人之间的避碰, 还可以实现虚拟人与静态障碍物的避碰.其躲避过程为:预处理、运动约束和相对速度障碍物方法应用.</p>
+<p>预处理过程为:首先网格化静态障碍物, 然后获得其包围盒信息, 最后计算此包围盒的外接圆作为静态障碍物的最终表示形式.通过以上步骤, 静态障碍物与动态障碍物达到了表示形式的统一.</p>
+<p>由于静态障碍物不会主动躲避虚拟人, 即速度为零, 所以其运动约束为</p>
+<img src="DNDX201102040_12700-1610735231014.jpg" alt="DNDX201102040_12700" style="zoom:50%;" />
+
+<h2 id="实验器材"><a href="#实验器材" class="headerlink" title="实验器材"></a>实验器材</h2><ul>
+<li><p> Window10</p>
+</li>
+<li><p>python</p>
+</li>
+</ul>
+<h2 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h2><h4 id="预处理"><a href="#预处理" class="headerlink" title="预处理"></a>预处理</h4><p>初始化变量与每个点的位置、障碍物的位置。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">goal_pos=[]</span><br><span class="line">now_pos=[]</span><br><span class="line">now_velocity=[]</span><br><span class="line">p_velocity=[]</span><br><span class="line">barriers=[]</span><br><span class="line">point_list=[] <span class="comment"># 储存目前没到终点的点</span></span><br><span class="line">peopleSpeed = <span class="number">1.5</span>  <span class="comment"># 人类默认行走速度</span></span><br><span class="line">radius=<span class="number">0.2</span> <span class="comment">#点半径</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 确定每个点的位置、目的位置</span></span><br><span class="line"><span class="keyword">for</span> theta <span class="keyword">in</span> np.arange(<span class="number">0</span>, <span class="number">360</span>, m):</span><br><span class="line">    angle = math.radians(theta)</span><br><span class="line">    goal = Position(-<span class="number">7.0</span> * math.cos(angle), -<span class="number">7.0</span> * math.sin(angle))</span><br><span class="line">    now_pos.append(Position(<span class="number">7.0</span> * math.cos(angle), <span class="number">7.0</span> * math.sin(angle)))</span><br><span class="line">    goal_pos.append(Position(-<span class="number">7.0</span> * math.cos(angle), -<span class="number">7.0</span> * math.sin(angle)))</span><br><span class="line">    now_velocity.append(Velocity(<span class="number">0.0</span>, <span class="number">0.0</span>))</span><br><span class="line">    point_list.append(num)</span><br><span class="line">    num +=<span class="number">1</span></span><br><span class="line"><span class="comment">#新建障碍物</span></span><br><span class="line">b = Barrier(-<span class="number">1.5</span>, <span class="number">0.5</span>, <span class="number">2.5</span>, <span class="number">1.5</span>)</span><br><span class="line">barriers.append(b)</span><br></pre></td></tr></table></figure>
+
+<h4 id="主循环"><a href="#主循环" class="headerlink" title="主循环"></a>主循环</h4><p>该程序的主循环如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Animation() <span class="comment"># 绘制动画</span></span><br><span class="line"><span class="comment"># 主循环</span></span><br><span class="line"><span class="keyword">while</span> <span class="built_in">len</span>(point_list)&gt;<span class="number">0</span>: <span class="comment">#如果还有点没有达到终点，循环不会停止</span></span><br><span class="line">    goal_velocity = ToGoalVelocity()<span class="comment"># 计算初速度</span></span><br><span class="line">    NowVelocityandPosition(goal_velocity) <span class="comment">#根据初速度计算符合条件的速度，和此速度下的新位置。</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> point_list: <span class="comment"># 判断是否有新的点达到了终点</span></span><br><span class="line">        <span class="keyword">if</span> Distance(now_pos[i],goal_pos[i])&lt;error: <span class="comment"># error：允许误差</span></span><br><span class="line">            point_list.remove(i)</span><br><span class="line">    t = t+<span class="number">1</span></span><br><span class="line">    Animation()</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>Distance</code>函数计算两个点之间的距离，原理比较简单就不介绍了。在判断该点是否到达终点时，我们允许一个误差值<code>error</code>存在。即，当目前位置与终点的距离在误差值范围之内时，我们就认定该点到达了终点。</p>
+<p>这是因为在固定时间步长内，有时会出现该点无法完美达到终点的状况。如果不允许一定的误差，有时候会出现该点一直在终点左右摇摆运动不停的情况。</p>
+<h4 id="计算个体速度"><a href="#计算个体速度" class="headerlink" title="计算个体速度"></a>计算个体速度</h4><p>首先计算每个个体的初速度。此初速度为当个体不受任何其他个体以及障碍物影响下表现出的速度，也是每个点可能的最大速度。</p>
+<p>表现为方向朝着目标，速度值（矢量长）为一个设定好的定值的速度。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">ToGoalVelocity</span>():</span></span><br><span class="line">    goal_v = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(N):</span><br><span class="line">        dist = Distance(now_pos[i], goal_pos[i])</span><br><span class="line">        diff_x = goal_pos[i].x - now_pos[i].x</span><br><span class="line">        diff_y = goal_pos[i].y - now_pos[i].y</span><br><span class="line">        <span class="keyword">if</span> dist &gt;= error:</span><br><span class="line">            goal_v.append(Velocity(diff_x * peopleSpeed / dist, diff_y * peopleSpeed / dist))</span><br><span class="line">        <span class="keyword">else</span>:  <span class="comment"># 在误差范围内认为已经达到终点</span></span><br><span class="line">            goal_v.append(Velocity(<span class="number">0.0</span>, <span class="number">0.0</span>))</span><br><span class="line">    <span class="keyword">return</span> goal_v</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>根据初速度、其他点与障碍物的位置来计算该点的真实速度。</p>
+<p>计算过程首先是通过计算出来的初速度，在圆周内遍历可能的各个方向的速度，并计算当前速度下适合可能会发生碰撞</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">temp_v = []</span><br><span class="line">m = Distance(toGoalvA, Velocity(<span class="number">0.0</span>, <span class="number">0.0</span>))</span><br><span class="line"><span class="comment"># 判断初速度是否会发生碰撞</span></span><br><span class="line"><span class="keyword">if</span> isCollision(toGoalvA, position_A, rel_BA) <span class="keyword">is</span> <span class="literal">False</span>:</span><br><span class="line">    temp_v.append(toGoalvA)</span><br><span class="line"><span class="comment"># 在360°内寻找其他可能合适的速度值</span></span><br><span class="line"><span class="keyword">for</span> angle <span class="keyword">in</span> np.arange(<span class="number">0</span>, <span class="number">2</span> * math.pi, <span class="number">0.1</span>):</span><br><span class="line">    <span class="keyword">for</span> v <span class="keyword">in</span> np.arange(<span class="number">0.02</span>, m + <span class="number">0.02</span>, m / <span class="number">5.0</span>):</span><br><span class="line">        new_v = Velocity(v * math.cos(angle), v * math.sin(angle))</span><br><span class="line">        <span class="keyword">if</span> isCollision(new_v, position_A, rel_BA) <span class="keyword">is</span> <span class="literal">False</span>:</span><br><span class="line">            temp_v.append(new_v)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了检测其他点与障碍物会不会在此速度下与该点发生碰撞，首先我们需要求出每个点与其他点的位置、角度、速度关系。</p>
+<p>就像原理部分所说的，我们把A看作没有半径的质点，B的半径看作$R_B’=R_B+R_A$，根据新的半径、AB两点的距离来计算会发生碰撞的速度方向范围，我们用一个最左边的角，一个最右边的角来表示范围。</p>
+<p>按此方法，我们计算出其他所有点会和当前点发生碰撞的范围。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getRela</span>(<span class="params">position_A, position_B, radius_A, radius_B,v_A,v_B</span>):</span></span><br><span class="line">    RVO = Position(position_A.x + <span class="number">0.5</span> * (v_A.x + v_B.x), position_A.y + <span class="number">0.5</span> * (v_A.y + v_B.y))  <span class="comment"># RVO算法</span></span><br><span class="line">    distance_BA = Distance(position_A, position_B)  <span class="comment"># AB之间的距离</span></span><br><span class="line">	distance_BA =<span class="built_in">max</span>( radius_A + radius_B,distance_BA)</span><br><span class="line"></span><br><span class="line">    angle_BA = math.atan2(position_B.y - position_A.y, position_B.x - position_A.x)</span><br><span class="line">    between_angle = math.asin((radius_B + radius_A) / distance_BA)</span><br><span class="line"></span><br><span class="line">    left_angle = angle_BA + between_angle</span><br><span class="line">    left_angle = math.atan2(math.sin(left_angle), math.cos(left_angle))</span><br><span class="line"></span><br><span class="line">    right_angle = angle_BA - between_angle</span><br><span class="line">    right_angle = math.atan2(math.sin(right_angle), math.cos(right_angle))</span><br><span class="line">    rel=Relation(RVO,left_angle,right_angle, radius_A + radius_B, distance_BA)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> rel</span><br></pre></td></tr></table></figure>
+
+<p>根据此范围，我们可以判断各个速度下是否会发生碰撞。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">isCollision</span>(<span class="params">v, position_A, rel_BA</span>):</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(rel_BA)):</span><br><span class="line">        position_AB = rel_BA[i].relation_positon</span><br><span class="line">        left_angle = rel_BA[i].left_angle</span><br><span class="line">        right_angle = rel_BA[i].right_angle</span><br><span class="line">        diff_angle = math.atan2(v.y + position_A.y - position_AB.y, v.x + position_A.x - position_AB.x)</span><br><span class="line">        <span class="comment"># 判断是否会撞击</span></span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">abs</span>(right_angle - left_angle) &lt;= math.pi:</span><br><span class="line">            <span class="keyword">if</span> right_angle &lt;= diff_angle &lt;= left_angle:</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">True</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">if</span> (left_angle &lt; <span class="number">0</span>) <span class="keyword">and</span> (right_angle &gt; <span class="number">0</span>):</span><br><span class="line">                left_angle = left_angle + <span class="number">2</span> * math.pi</span><br><span class="line">                <span class="keyword">if</span> diff_angle &lt; <span class="number">0</span>:</span><br><span class="line">                    diff_angle = diff_angle + <span class="number">2</span> * math.pi</span><br><span class="line">                <span class="keyword">if</span> right_angle &lt;= diff_angle &lt;= left_angle:</span><br><span class="line">                    <span class="keyword">return</span> <span class="literal">True</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">False</span></span><br></pre></td></tr></table></figure>
+
+<p>如果计算出当前没有速度符合不碰撞的要求，就设定当前速度为0，等待下次更新速度的时间。</p>
+<h4 id="更新位置"><a href="#更新位置" class="headerlink" title="更新位置"></a>更新位置</h4><p>得到新速度后，根据设定好的时间间隔来更新当前点的位置</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">now_pos[i].x += new_v[i].x * T</span><br><span class="line">now_pos[i].y += new_v[i].y * T</span><br></pre></td></tr></table></figure>
+
+<p>最后使用绘制函数来绘制当前帧。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">Animation</span>():</span></span><br><span class="line">    figure = pyplot.figure()</span><br><span class="line">    ax = figure.add_subplot()</span><br><span class="line">    pyplot.axis(<span class="string">&#x27;off&#x27;</span>)</span><br><span class="line">    ax.set_aspect(<span class="string">&#x27;equal&#x27;</span>)</span><br><span class="line">    ax.set_xlim(size[<span class="number">0</span>], size[<span class="number">1</span>])</span><br><span class="line">    ax.set_ylim(size[<span class="number">0</span>], size[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(barriers)):</span><br><span class="line">        ob = matplotlib.patches.Rectangle((barriers[i].position.x -barriers[i].height, barriers[i].position.y - barriers[i].width),<span class="number">2</span> * barriers[i].height, <span class="number">2</span> * barriers[i].width,facecolor=<span class="string">&#x27;red&#x27;</span>,fill=<span class="literal">True</span>,alpha=<span class="number">1</span>)</span><br><span class="line">        ax.add_patch(ob)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(N):</span><br><span class="line">        point = matplotlib.patches.Circle((now_pos[i].x, now_pos[i].y),radius=radius,facecolor=color[i%<span class="number">16</span>],ls=<span class="string">&#x27;solid&#x27;</span>,alpha=<span class="number">1</span>,zorder=<span class="number">2</span>)</span><br><span class="line">        ax.add_patch(point)</span><br><span class="line"></span><br><span class="line">    pyplot.savefig(path+<span class="string">&#x27;/&#x27;</span>+<span class="built_in">str</span>(t)+<span class="string">&#x27;.png&#x27;</span>)</span><br><span class="line">    fig=cv2.imread(path+<span class="string">&#x27;/&#x27;</span>+<span class="built_in">str</span>(t)+<span class="string">&#x27;.png&#x27;</span>)</span><br><span class="line">    cv2.imshow(<span class="string">&quot;test&quot;</span>,fig)</span><br><span class="line">    out.write(fig)</span><br><span class="line">    cv2.waitKey(<span class="number">10</span>)</span><br><span class="line">    pyplot.close(figure)</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="实验结果分析"><a href="#实验结果分析" class="headerlink" title="实验结果分析"></a>实验结果分析</h2><p>实验中给每个个体设定的行走任务是走到圆中与自己位置的正对面位置。</p>
+<ul>
+<li><p>无障碍物</p>
+<p><img src="%E6%8F%92%E7%94%BB2.jpg" alt="img"></p>
+</li>
+<li><p>有障碍物</p>
+<p><img src="%E6%8F%92%E7%94%BB.jpg" alt="img"></p>
+</li>
+</ul>
+<h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><p>在实验过程中，其实还遇到了一些困难。比如我设置当前点没有找到合适的速度时，就在设置速度为0，原地等待到下一次速度选择。但是有时点、其他点、障碍物会达到一种平衡的状态，导某些点一直速度为0卡在原地。这证明我的算法中选择速度的部分还没有做得非常好。</p>
+<p><img src="image-20210115235802804.png" alt="image-20210115235802804"></p>
+<center>如图，红色点和紫色点一直卡在障碍物周围回不去。</center>
+
+
+
+
+
+
+
+<h2 id="实验心得"><a href="#实验心得" class="headerlink" title="实验心得"></a>实验心得</h2><p>在实验时，当个体集里的点处于一个密集的状态时，会出现轻微的抖动现象。</p>
+<p>其实在知网中关于RVO算法的论文中已经提出了去除这种抖动现象的方法，即“停止规则”。可惜时间有限，在了解后没有应用在作业里，因此本作业里没有很好地消除抖动现象。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2021/01/29/ca_report/" data-id="ckmm103ef0003lgtz9xn56a92" class="article-share-link">
+        Share
+      </a>
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ComputerAnimation/" rel="tag">ComputerAnimation</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/python/" rel="tag">python</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  <a href="/2021/02/01/2021-2-1-Unity-install/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      Unity学习准备
+      
+    </div>
+  </a>
+  
+  
+  <a href="/2021/01/29/echart1/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">echart实现timeline+map+graph组合可视化图表</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+
+</html>
