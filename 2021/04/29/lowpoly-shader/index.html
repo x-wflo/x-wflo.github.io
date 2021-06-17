@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    【UnityShader】lowpoly shader的实现 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-lowpoly-shader" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  【UnityShader】lowpoly shader的实现
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/04/29/lowpoly-shader/" class="article-date">
+  <time datetime="2021-04-29T14:36:31.000Z" itemprop="datePublished">2021-04-29</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/unity/">unity</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>该篇探究的是让一些普通3D模型呈现出lowpoly风格的一些方法（主要是shader）。</p>
+<span id="more"></span>
+
+<p>low poly（低多边形）风格，Poly是Polygon的简称，Low poly风格其实是一种复古风格，在早期的不支持插值渲染的年代，这种风格随处可见，因为模型简单、渲染也不复杂，在早期游戏中被大量使用。</p>
+<p><img src="image-20210617145747107.png" alt="image-20210617145747107"></p>
+<p><img src="image-20210617145806174.png" alt="image-20210617145806174"></p>
+<p>随着时间的推进，计算机性能和技术得到了不断的提升。low poly风格已经从节省运算空间的一种手段变成了一个艺术风格，在如今技术进步了很多的时代，还是有很多游戏选择使用lowpoly风格来做游戏。</p>
+<p>本学期游戏开发课程中，本小组也是打算运用lowpoly风格制作本组游戏。</p>
+<p>但是由于时间和能力的限制，我们大程里的模型并不是都是由我们自己建模得来的，在网上找相应的资源是肯定会经历的过程。但是有些时候我们并不能找到一些需要的lowpoly风格的资源，只能找到普通风格的资源。这时候如果有相应风格的shader的话，会大大节省美工找资源的一个时间。这也是我探究unity中low poly shader实现方法的原因。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>首先，介绍下lowpoly。</p>
+<p>Low poly风格的渲染也被称为flat shading（平面着色）。flat shading中，根据每个三角形的法线计算着色效果。着色计算只执行一次，整个三角形都采用计算结果的颜色，这样就导致相邻两个三角形的法向量差别很大，所以就能看到明显的三角形的边。</p>
+<p><img src="v2-fc91b96fe8e4c91076f50bd3e69881fa_720w.jpg" alt="img"></p>
+<h2 id="效果展示"><a href="#效果展示" class="headerlink" title="效果展示"></a>效果展示</h2><p>先上效果展示再放原理。</p>
+<p><img src="long.gif" alt="image-20201212122811902"></p>
+<p><img src="wolf.gif" alt="image-2"></p>
+<h2 id="实现方式"><a href="#实现方式" class="headerlink" title="实现方式"></a>实现方式</h2><p>我们通过Geometry Shader来实现lowpoly风格的场景。</p>
+<p>这种方法的原理就是在光栅化前、在Geometry Shader里给每个顶点增加一个属性，面法线faceNormal。由于Geometry Shader中可以知道同一个三角面片中的所有三个顶点的信息，因此我们可以为它们计算一个相同的面法线值。这样，即便在经过光栅化插值后，同一个三角面片中的面法线也是一样的。关键代码如下：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">maxvertexcount(3)</span>]</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">geom</span>(<span class="params">triangle v2g IN[<span class="number">3</span>], inout TriangleStream&lt;g2f&gt; triStream</span>)</span> &#123;</span><br><span class="line">    float3 A = IN[<span class="number">1</span>].worldPos.xyz - IN[<span class="number">0</span>].worldPos.xyz;</span><br><span class="line">    float3 B = IN[<span class="number">2</span>].worldPos.xyz - IN[<span class="number">0</span>].worldPos.xyz;</span><br><span class="line">    float3 fn = normalize(cross(A, B));</span><br><span class="line"></span><br><span class="line">    g2f o;</span><br><span class="line">    o.pos = IN[<span class="number">0</span>].pos;</span><br><span class="line">    o.uv = IN[<span class="number">0</span>].uv;</span><br><span class="line">    o.worldPos = IN[<span class="number">0</span>].worldPos;</span><br><span class="line">    o.faceNormal = fn;</span><br><span class="line">    triStream.Append(o);</span><br><span class="line"></span><br><span class="line">    o.pos = IN[<span class="number">1</span>].pos;</span><br><span class="line">    o.uv = IN[<span class="number">1</span>].uv;</span><br><span class="line">    o.worldPos = IN[<span class="number">1</span>].worldPos;</span><br><span class="line">    o.faceNormal = fn;</span><br><span class="line">    triStream.Append(o);</span><br><span class="line"></span><br><span class="line">    o.pos = IN[<span class="number">2</span>].pos;</span><br><span class="line">    o.uv = IN[<span class="number">2</span>].uv;</span><br><span class="line">    o.worldPos = IN[<span class="number">2</span>].worldPos;</span><br><span class="line">    o.faceNormal = fn;</span><br><span class="line">    triStream.Append(o);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是由于该方法通过Geometry Shader实现，要求使用GPU，因此有些大材小用，移动端游戏上也不能实现此效果。</p>
+<h2 id="一些限制"><a href="#一些限制" class="headerlink" title="一些限制"></a>一些限制</h2><p>这个shader的限制也很明显，就是最后lowpoly化后的效果和原模型的面片数量会进行一个直接的挂钩。</p>
+<p>比如图上这个鸭子模型，虽然我们对它使用了shader，它也成功地lowpoly化了，但是由于模型本身的面数很高，lowpoly化后还是拥有比较多的面和细节，这对于lowpoly来说是不合格的。同时因为geometry shader是SM4.0的技术，所以手机上可能无法达到相应的效果。</p>
+<p><img src="duck.gif" alt="image-4"></p>
+<h2 id="其他得到LowPoly风格的方法"><a href="#其他得到LowPoly风格的方法" class="headerlink" title="其他得到LowPoly风格的方法"></a>其他得到LowPoly风格的方法</h2><h4 id="Unity内部直接进行软硬边转换"><a href="#Unity内部直接进行软硬边转换" class="headerlink" title="Unity内部直接进行软硬边转换"></a>Unity内部直接进行软硬边转换</h4><p>在Unity中，Unity是可以直接帮我们做到软硬边的转换的。它的原理其实就是重新拆点、重新计算点法线。</p>
+<p><img src="20160527103913920" alt="这里写图片描述"></p>
+<p>在我们导入一个模型后，可以在模型的导入面板中的Normals &amp; Tangents块中，把Normals设置成Calculate模式、把Smoothing Angle设置成0就可以得到硬边的效果。把所有相连的边在建模软件中设置成硬边（Hard Edge）后，软件就会进行拆顶点的工作，每个三角形有各自属于自己的三个顶点，不与他人共用，这三个顶点的点法线计算不会受毗连三角形的影响，而仅仅是由该三角面片的面法线决定。</p>
+<p>这样的模型可以直接使用任何普通的Shader进行渲染，就会得到flat shading的效果。但这种方式会增加顶点的数目。</p>
+<p><img src="import_compare.png" alt="import_compare"></p>
+<h4 id="程序产生的网格"><a href="#程序产生的网格" class="headerlink" title="程序产生的网格"></a>程序产生的网格</h4><p>以下代码可以把任何模型强制转化成没有共用顶点的模型。以此再计算顶点法线，就可以得到lowpoly的效果</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Vector3[] oldVerts = mesh.vertices;</span><br><span class="line">Vector4[] oldTangents = mesh.tangents;</span><br><span class="line">Vector2[] oldUVs = mesh.uv;</span><br><span class="line"><span class="built_in">int</span>[] triangles = mesh.triangles;</span><br><span class="line">Vector3[] newVerts = <span class="keyword">new</span> Vector3[triangles.Length];</span><br><span class="line">Vector4[] newTangents = <span class="keyword">new</span> Vector4[triangles.Length];</span><br><span class="line">Vector2[] newUVs = <span class="keyword">new</span> Vector2[triangles.Length];</span><br><span class="line"><span class="keyword">for</span> (<span class="built_in">int</span> i = <span class="number">0</span>; i &lt; triangles.Length; i++) &#123;</span><br><span class="line">    newVerts[i] = oldVerts[triangles[i]];</span><br><span class="line">    newTangents[i] = oldTangents[triangles[i]];</span><br><span class="line">    newUVs[i] = oldUVs[triangles[i]];</span><br><span class="line">    triangles[i] = i;</span><br><span class="line">&#125;</span><br><span class="line">mesh.vertices = newVerts;</span><br><span class="line">mesh.tangents = newTangents;</span><br><span class="line">mesh.triangles = triangles;</span><br><span class="line">mesh.uv = newUVs;</span><br><span class="line">mesh.RecalculateBounds();</span><br><span class="line">mesh.RecalculateNormals();</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2021/04/29/lowpoly-shader/" data-id="ckq0kas6l000klotzbu6jfibz" class="article-share-link">
+        Share
+      </a>
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Unity/" rel="tag">Unity</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  
+  <a href="/2021/03/20/fog-shader/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">【UnityShader】垂直雾的实现</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+</body>
+
+</html>
