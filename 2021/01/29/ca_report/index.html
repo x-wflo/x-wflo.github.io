@@ -100,7 +100,7 @@
 <h4 id="RVO算法"><a href="#RVO算法" class="headerlink" title="RVO算法"></a>RVO算法</h4><p>核心思想: 优化VO思想, 假定对方也会采取避障行为, 缩小(average VO)速度。</p>
 <p>相对速度障碍物 (RVO) 的定义:所有属于ΦVO的速度与当前速度VA的均值的集合, 其数学表述为</p>
 <p><img src="DNDX201102040_12100.jpg" alt="DNDX201102040_12100" style="zoom:50%;" /></p>
-<p>其几何表示为:将$Φ<em>{VO}$的端点从$V_B$移到$V_B$与$V_A$矢量和的一半, 如图3 (d) 中虚线区域所示.根据相对速度障碍物的定义, 下一时刻速度$V_A^N$只要不属于$ΦR</em>{VO}$即可保证虚拟人之间不会发生碰撞。</p>
+<p>其几何表示为:将$Φ_{VO}$的端点从$V_B$移到$V_B$与$V_A$矢量和的一半, 如图3 (d) 中虚线区域所示.根据相对速度障碍物的定义, 下一时刻速度$V_A^N$只要不属于$ΦR_{VO}$即可保证虚拟人之间不会发生碰撞。</p>
 <h4 id="RVO对静态障碍的避碰"><a href="#RVO对静态障碍的避碰" class="headerlink" title="RVO对静态障碍的避碰"></a>RVO对静态障碍的避碰</h4><p>相对速度障碍物方法不仅可以解决虚拟人之间的避碰, 还可以实现虚拟人与静态障碍物的避碰.其躲避过程为:预处理、运动约束和相对速度障碍物方法应用.</p>
 <p>预处理过程为:首先网格化静态障碍物, 然后获得其包围盒信息, 最后计算此包围盒的外接圆作为静态障碍物的最终表示形式.通过以上步骤, 静态障碍物与动态障碍物达到了表示形式的统一.</p>
 <p>由于静态障碍物不会主动躲避虚拟人, 即速度为零, 所以其运动约束为</p>
@@ -345,6 +345,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
