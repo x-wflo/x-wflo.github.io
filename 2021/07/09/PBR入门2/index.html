@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    PBR入门2 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-PBR入门2" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  PBR入门2
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/07/09/PBR%E5%85%A5%E9%97%A82/" class="article-date">
+  <time datetime="2021-07-09T14:36:31.000Z" itemprop="datePublished">2021-07-09</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/TA%E5%AD%A6%E4%B9%A0/">TA学习</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>美术师看这里。</p>
+<p>在PBR入门1最后几段中我们简略学习了美术师在PBR中所要设置的几个参数，在这篇中我们将会详细介绍这几个属性的详细workflow，同时也讲述一些美术师在操作时候需要注意的点。</p>
+<span id="more"></span>
+<h2 id="金属-粗糙度工作流程"><a href="#金属-粗糙度工作流程" class="headerlink" title="金属/粗糙度工作流程"></a>金属/粗糙度工作流程</h2><p>金属/粗糙度的工作流程通过一组通道定义。这些通道作为纹理提供给着色器的采样器。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/cc1eb752-c072-4eef-8a07-7c7932c86497" alt="img"></p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/4fed8db6-e4fe-4a21-8766-255574ac36de" alt="img"></p>
+<p>在此流程中，金属的反射率值和电解质的颜色都放在基色（basic color）图中，掠射角（入射角接近于90度）的反射处理会由PRDF进行处理。金属度贴图就像一个遮罩，找到金属和非金属的部分，PRDF使用不同的F0对他们进行处理。</p>
+<h3 id="关于F0"><a href="#关于F0" class="headerlink" title="关于F0"></a>关于F0</h3><p>前面介绍过介电材料的F0一般变化不大，因此我们一般硬编码在着色器中，设置为0.04（4%）。但Substance工具集和UE4中允许更改电介质的F0值。此项输出一般被记为<code>specularLevel</code>,一般范围为0.0-0.08。</p>
+<h3 id="基色"><a href="#基色" class="headerlink" title="基色"></a>基色</h3><p>基色（basic color）图是一个RGB图。对于非金属材质来说，它记录了该材质的漫反射颜色；对于金属材质来说，他记录的是反射率值。一般来说着色器通过金属值来判断该点记录的是漫反射颜色还是反射率值。</p>
+<h4 id="在创建基色图时需要注意的"><a href="#在创建基色图时需要注意的" class="headerlink" title="在创建基色图时需要注意的"></a>在创建基色图时需要注意的</h4><p>不同于一般的漫反贴射图，在基色图中，太暗或者太亮的颜色都是不行的。一般我们不会设置0.0或者255.0的值作为基色。</p>
+<p>对于很暗的物体，我们一般不设置低于30-50sRGB，对于明亮的物体，我们一般不高于240sRGB。</p>
+<p>基色图中一般不包含由环境遮挡造成的光照信息（AO），但是当部分环境遮挡光照细节到AO很难表示的时候，也可以在基色图里添加微阻挡信息，如下图。但是在后续工作流程中，添加的微阻挡信息仍然要和基色图上其他信息一起遵守基色图的亮度范围控制。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/1e92ba2c-d8b0-476d-ae3c-34c133e16b7d" alt="img"></p>
+<p>根据以上内容做个总结：、</p>
+<ul>
+<li>金属反射率的值从现实生活中取用。</li>
+<li>除了微遮挡以外，基色图上不应该有照明信息。</li>
+<li>基色的暗值不应低于30sRGB-50sRGB</li>
+<li>基色的亮值不应高于240sRGB值</li>
+<li>金属的反射率值很高，一般在70%-100%内，我们一般映射到180-255sRGB中。</li>
+</ul>
+<h3 id="金属贴图"><a href="#金属贴图" class="headerlink" title="金属贴图"></a>金属贴图</h3><p>金属贴图在前篇中也介绍的差不多了，他类似一个灰度贴图。它告诉着色器哪部分是金属（235sRGB-255sRGB），哪部分是非金属(0sRGB)，或者也会有拥有一层薄污垢的金属/金属被氧化/上了油漆的金属，这时候它的取值范围在金属和非金属的取值之间浮动。根据金属度以上特性，我们可以把它想象成一种蒙版。</p>
+<p>当金属贴图的值低于235sRGB时，需要降低基色贴图中的反射率值。</p>
+<p>下述图表示了使用金属/粗糙度工作流程正确和错误地创建的贴图示例。 污垢在金属贴图中标记为原始金属。 此外，金属反射率值在基色中设置得太低，因为它不反映 70-100% 的镜面反射范围。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/d303fbb1-5212-4bd1-a340-1f4b06fa5f33" alt="img"></p>
+<h3 id="粗糙度贴图"><a href="#粗糙度贴图" class="headerlink" title="粗糙度贴图"></a>粗糙度贴图</h3><p>粗糙度贴图描述了材质表面的不规则程度（导致漫反射的原因）比较粗糙的面会拥有更大更暗的高光，更光滑的面有更小更亮的高光。</p>
+<p>在粗糙度贴图中，0.0代表的是光滑的表面，1.0代表的是粗糙的面。</p>
+<h3 id="Resolution-and-Texel-Density（分辨率和纹素密度）"><a href="#Resolution-and-Texel-Density（分辨率和纹素密度）" class="headerlink" title="Resolution and Texel Density（分辨率和纹素密度）"></a>Resolution and Texel Density（分辨率和纹素密度）</h3><p>使用金属/粗糙度工作流程的一个副产品是它会产生白边伪影，如图。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/64d5099a-2921-4f29-bd22-aab9ae83a38d" alt="img"></p>
+<p>这种条纹的产生原因是纹理插值。它在材料的过渡区间内非常明显。</p>
+<p>文件的分分辨率和Texel密度和边缘伪影有很大的关联性。</p>
+<p>Texel是组成一个纹理的最小信息，Texel密度就是网格上纹理分辨率的密度。Texel密度也称像素比率。一个屏幕像素可以由多个texel来确定，或者一个Texel可以涵盖多个屏幕像素。</p>
+<p>Texel密度的单位是（px/cm）如果你希望每平方米（100cm）达到1024像素，Texel密度将为10.24。</p>
+<p>回到伪影的产生。比如，如果用硬边笔刷在金属和非金属间创建过渡区域，低分辨率会柔化边缘，加剧伪影。这个低分辨率问题也是由UV未根据文档分辨率进行缩放以提供足够的Texel密度造成的。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/6e2bb53b-9b31-46c3-a97c-4f2e03eb2b4a" alt="img"></p>
+<p>上图两个纹理集都使用2048像素分辨率，但是右侧为低Texel密度的劣质UV布局。</p>
+<p>为了最大程度上减少伪影的产生，请确保UV提供足够密度以匹配文档分辨率。</p>
+<h3 id="金属-粗糙度工作流程的优缺点"><a href="#金属-粗糙度工作流程的优缺点" class="headerlink" title="金属/粗糙度工作流程的优缺点"></a>金属/粗糙度工作流程的优缺点</h3><h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>可以更容易地创作并且更不容易因提供不正确的介电 F0 数据而导致错误。 </li>
+<li>使用较少的纹理内存，因为金属和粗糙度都是灰度贴图。</li>
+<li>是一种更广泛采用的工作流程。</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>在地图创建中无法控制电介质的 F0。 但是，大多数实现都有一个镜面反射控制来覆盖 4% 的基础值。 </li>
+<li>边缘伪影更明显，尤其是在较低分辨率下 </li>
+</ul>
+<h2 id="高光-光泽度工作流程"><a href="#高光-光泽度工作流程" class="headerlink" title="高光/光泽度工作流程"></a>高光/光泽度工作流程</h2><p>和金属度/粗糙度工作流程一样，镜面反射/光泽度工作流程也是通过一组贴图进行定义的，镜面反射/光泽度工作流程的贴图是漫反射(diffuse)、镜面反射(specular)和光泽度（glossiness）。尽管substance使用漫反射来命名这个贴图，还是把它理解成反照率（albedo）比较好。同时该workflow里也有和前一个workflow通用的AO、法线、高度贴图。</p>
+<p>在该workflow中，金属的反射率值和非金属的F0值放置在高光贴图中。除此之外，您还会拥有两张RGB贴图：一个用于漫反射光（diffuse/Albedo），一个用于反射率值（specular）。</p>
+<p>在高光贴图中，可以允许用户自己定义材料的F0值。这就需要用户更加小心注意，防止出现不正确的值从而导致能量不守恒的情况。比如设置了1.0的漫反射和1，0的镜面反射，反射+折射结合起来，甚至高于入射光，违反了能量守恒定律。</p>
+<h3 id="漫反射贴图（Diffuse）"><a href="#漫反射贴图（Diffuse）" class="headerlink" title="漫反射贴图（Diffuse）"></a>漫反射贴图（Diffuse）</h3><p>和金属/粗糙度工作流程中的basic color相似，但不会包括任何反射率值。</p>
+<p>Diffuse贴图中只含有albedo颜色。全金属部分在该贴图上是黑色的（0.0），因为金属没有漫反射颜色，折射的光会被全部吸收，但金属上被氧化污垢的部分不是黑色。对于非金属来说，暗值应不低于30sRGB-50sRGB，亮值不高于240sRGB.</p>
+<p>除了微遮挡以外，diffuse贴图上没有照明信息。</p>
+<h3 id="高光贴图（Specular）"><a href="#高光贴图（Specular）" class="headerlink" title="高光贴图（Specular）"></a>高光贴图（Specular）</h3><p>镜面反射率值定义了金属的反射率值和非金属的F0。该贴图中允许我们修改不同金属和非金属的F0值。由于F0的值是完全由我们自己控制的，所以创造正确的F0值很重要。普通非金属的F0值在2%-5%之间（sRGB :40-75），不能太离谱。</p>
+<p>对于找不到IOR值的非金属，我们一般使用4%作为其F0的假设。宝石是非金属中的一个意外，它的F0在5%-17%之间。金属的反射率值是70-100%，（sRGB:180-255sRGB）</p>
+<p>由于该贴图中含有非常多材质的F0值，我们可以把该贴图分层，一个材料一层。</p>
+<h3 id="光泽度贴图-Glossiness"><a href="#光泽度贴图-Glossiness" class="headerlink" title="光泽度贴图(Glossiness)"></a>光泽度贴图(Glossiness)</h3><p>光泽度贴图表示了导致漫反射的形状表面的不规则性。和金属/粗糙度工作流程相反，0.0（黑色）代表粗糙，1.0（白色）代表光滑。</p>
+<h3 id="解析度（Resolution）和Texel密度"><a href="#解析度（Resolution）和Texel密度" class="headerlink" title="解析度（Resolution）和Texel密度"></a>解析度（Resolution）和Texel密度</h3><p>边缘伪影在高光/光泽度流程的影响没有粗糙度/金属度影响的那么明显。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/2ffb7c0c-9023-4c98-b6be-a3113a0c58b7" alt="img"></p>
+<p>与粗糙度/金属度工作流程不同的是，该工作流程中产生的伪影是黑色的。</p>
+<h3 id="高光-光泽度工作流程的优缺点"><a href="#高光-光泽度工作流程的优缺点" class="headerlink" title="高光 光泽度工作流程的优缺点"></a>高光 光泽度工作流程的优缺点</h3><h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>更少的边缘伪影</li>
+<li>可以在高光贴图中自己控制F0的值、</li>
+</ul>
+<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>由于可以自己控制F0的值，不注意就会出现不正确的F0。</li>
+<li><p>需要更多的纹理储存空间（有两张RGB贴图）</p>
+</li>
+<li><p>操作难度比金属/粗糙度工作流程更大，需要了解更多的物理知识，比如一般非金属的F0值，能量守恒定律。</p>
+</li>
+</ul>
+<h2 id="两个workflow中通用的一些贴图"><a href="#两个workflow中通用的一些贴图" class="headerlink" title="两个workflow中通用的一些贴图"></a>两个workflow中通用的一些贴图</h2><h3 id="法线贴图（Normal）"><a href="#法线贴图（Normal）" class="headerlink" title="法线贴图（Normal）"></a>法线贴图（Normal）</h3><p>法线贴图用于模拟表面细节。 它是一个 RGB 贴图，其中每个通道对应于表面法线的 X、Y 和 Z 坐标。 它可用于将高分辨率模型的投影细节存储到低分辨率模型。 在 Substance 工具集中，可以通过烘焙法线或将高度贴图转换为法线贴图。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/4afa729e-4cd1-4418-b6c3-c4e3c26a5d43" alt="img"></p>
+<h3 id="Ambient-Occlusion-AO"><a href="#Ambient-Occlusion-AO" class="headerlink" title="Ambient Occlusion (AO)"></a>Ambient Occlusion (AO)</h3><p>通俗上来说该贴图就是阴影贴图。该贴图表示了一个表面上的点可以拥有多少的环境照明。它只影响漫反射的部分，不会对高光造成影响。</p>
+<p>可以把AO贴图想象成硬编码进物体上的阴影部分。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/1fb0db91-26c0-45c4-9733-27f4e841fb00" alt="img"></p>
+<p>在Substance中，环境光照会乘以AO。AO贴图是一个可选的通道，它不会烘培到问题贴图中，而是通过自己的通道提供给着色器。</p>
+<p>Substance中提供从网格烘培/集成烘培工具集从法线贴图转换。也可以从高度输入生成基于水平的环境光遮挡，结果与光线跟踪烘培相似，如下图。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/dd026ab3-94a1-4447-9afa-4ed16d5cff63" alt="img"></p>
+<center>Using the HBAO node in Designer or filter in Painter produces similar results to a raytraced bake</center>
+
+
+
+<h3 id="高度贴图（height）"><a href="#高度贴图（height）" class="headerlink" title="高度贴图（height）"></a>高度贴图（height）</h3><p>高度贴图可以帮助加深视差、深度。可以为法线贴图和凹凸贴图添加更多明显的深度，提高真实感。Substance使用浮雕贴图视差算法，高度由 PBR 着色器中的纹理采样器提供，也是 PBR 着色器的选项通道输入。、</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/99d93ea3-b6e6-43ae-bec7-75d0f967fa1e" alt="img"></p>
+<p>高度贴图的获得方法有很多，可以和AO一样在Substance中通过集成的烘培工具集和网格中烘培，也可以从法线贴图转换，也可以在SubstancePainter中直接绘制高度细节。</p>
+<p>需要注意的是高度贴图应该尽量减少高频细节量，特别是在实时着色器中。高度图应该设计为几何体的整体轮廓。</p>
+<h2 id="PBR实用软件"><a href="#PBR实用软件" class="headerlink" title="PBR实用软件"></a>PBR实用软件</h2><p>在本节中介绍几个可以帮助PBR纹理设置和反射率设置的实用插件。</p>
+<h3 id="Substance-Designer"><a href="#Substance-Designer" class="headerlink" title="Substance Designer"></a><strong>Substance Designer</strong></h3><h4 id="PBR基本材质"><a href="#PBR基本材质" class="headerlink" title="PBR基本材质"></a>PBR基本材质</h4><p>该节点可以在<code>Material Filters &gt; PBR Utilities</code>目录下找到，支持金属/粗糙度和高光/光泽度工作流程，为原始金属提供通用预设，为非金属设置反照率（Albedo）。可以控制粗糙度/光泽度/基色等通道。</p>
+<h4 id="F0"><a href="#F0" class="headerlink" title="F0"></a>F0</h4><p>该节点也在<code>Material Filters &gt; PBR Utilities</code>目录下，可以输出常用的非金属的F0值。该节点拥有一个IOR的输入字段，会计算通过IOA得到的F0。（用于高光/光泽度流程）</p>
+<h4 id="金属反射"><a href="#金属反射" class="headerlink" title="金属反射"></a>金属反射</h4><p>此节点拥有多种金属的预设，可以输出常见金属原材料的反射率值。在<code>Material Filters &gt; PBR Utilities</code>下找到它。</p>
+<h4 id="PBR金属-粗糙度验证"><a href="#PBR金属-粗糙度验证" class="headerlink" title="PBR金属/粗糙度验证"></a>PBR金属/粗糙度验证</h4><p>可以在<code>Material Filters&gt;PBR Utilities</code>下该工具与金属/粗糙度工作流程配合使用，可以帮助用户检查基色和金属贴图的错误值。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/bb52362f-6370-4f89-a2f4-633f59868c90" alt="img"></p>
+<p>节点输出一个热力图，红色为不正确的部分，黄色和绿色为正确的部分。</p>
+<p>它会检查金属区域（金属值大于等于235的部分）F0值；对于Albedo值，它检查非金属的亮度范围是否正确。</p>
+<h4 id="Conversion"><a href="#Conversion" class="headerlink" title="Conversion"></a>Conversion</h4><p>该工具将贴图从金属/粗糙度工作流转换为各种渲染，可以在 <code>Material Filters &gt; PBR Utilities</code>下找到。</p>
+<ul>
+<li>Vray (GGX)</li>
+<li>Corona</li>
+<li>Corona 1.6</li>
+<li>Redshift 1.x °</li>
+<li>Arnold 4 (aiSurface) °</li>
+<li>Arnold 4 (aiStandard) °</li>
+<li>Renderman (pxrSurface)</li>
+</ul>
+<h3 id="Substance-Painter"><a href="#Substance-Painter" class="headerlink" title="Substance Painter"></a>Substance Painter</h3><h4 id="PBR-Metal-Roughness-Validate-粗糙度-金属度验证器"><a href="#PBR-Metal-Roughness-Validate-粗糙度-金属度验证器" class="headerlink" title="PBR Metal/Roughness Validate 粗糙度/金属度验证器"></a>PBR Metal/Roughness Validate 粗糙度/金属度验证器</h4><p>与金属/粗糙度工作流程配合使用，可以帮助用户检查基色和金属贴图的错误值。可以从Substance Share中下载。其中红色不正确，黄色与绿色正确。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/8a02b869-70cc-4548-b378-31a01ab8254b" alt="img"></p>
+<h4 id="物质输出和渲染"><a href="#物质输出和渲染" class="headerlink" title="物质输出和渲染"></a>物质输出和渲染</h4><p>Substance Source 的 Substance 材质支持金属/粗糙度和镜面反射/光泽度工作流程。这些输出可用于基于物理的实时着色器，例如虚幻引擎 4 和 Unity 中的着色器。基色/金属/粗糙度输出可用于支持金属工作流程的光线追踪渲染器，例如 Arnold。镜面反射/光泽度贴图仅用于实时着色器。根据渲染器的不同，您可以直接使用基色/金属/粗糙度输出，或者您可能需要转换它们。</p>
+<p>您从 Substance Share 下载的自定义材料或资源可能没有适合给定渲染器的输出，因为它们主要仅包含基色/金属/粗糙度输出，因此了解您的材料将接受的材料输入类型非常重要，以便您可以如果需要转换，请正确利用 Substance 材质的输出。</p>
+<p>例如，使用 Arnold 5，您可以直接使用金属/粗糙度输出。但是，对于 Vray 材质，您需要转换金属/粗糙度输出以生成反射和 1/IOR 贴图。 Substance Painter 支持多种第三方渲染器配置，如下图所示。</p>
+<p><img src="https://cdn.allegorithmic.com/images/academy/4e0ec5b4-371b-4905-8b0a-2449a5b06954" alt="img"></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PBR/" rel="tag">PBR</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93%EF%BC%8CTA/" rel="tag">渲染，TA</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  
+  <a href="/2021/07/08/PBR%E5%85%A5%E9%97%A8/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">PBR入门1</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+</body>
+
+</html>
