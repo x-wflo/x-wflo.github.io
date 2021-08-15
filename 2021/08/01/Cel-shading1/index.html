@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    【Cel-Shading】梯度漫反射的实现 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-Cel-shading1" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  【Cel-Shading】梯度漫反射的实现
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/08/01/Cel-shading1/" class="article-date">
+  <time datetime="2021-08-01T14:36:31.000Z" itemprop="datePublished">2021-08-01</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/unity/">unity</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>卡通渲染最基础的两部分应该就是梯度漫反射与描边。先来说比较简单的梯度漫反射。</p>
+<span id="more"></span>
+<p>大家学习shader的时候肯定都会尝试先写下最简单的兰伯特/半兰伯特光照模型，这里不用多说：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">float3 worldNormal = normalize(i.worldNormal);</span><br><span class="line">float3 worldLightDir = normalize(_WorldSpaceLightPos0.xyz);</span><br><span class="line">float3 baseColor = tex2D(_MainTex,i.uv).rgb;</span><br><span class="line"></span><br><span class="line">float3 ambient = UNITY_LIGHTMODEL_AMBIENT.xyz * baseColor; <span class="comment">//环境光</span></span><br><span class="line"><span class="built_in">float</span> diffuse =  diffmask( tex2D(_DiffMap,i.uv).a ,  max(<span class="number">0</span>, dot(worldNormal, worldLightDir)) ) * shadow ;</span><br></pre></td></tr></table></figure>
+<p>多乘了一个<code>shadow</code>参数是因为我还计算了光照投影，打算一起打包了做阴影颜色的梯度化。</p>
+<p><img src="image-20210812140332071.png" alt="image-20210812140332071"></p>
+<p>因为用了兰伯特模型所以阴影部分是死黑不透气的……</p>
+<p>这时候就需要写我们的梯度漫反射了。一般来说有直接用<code>smoothstep</code>函数梯度变化或者使用一张ramp图两种方法。</p>
+<h3 id="ramp图控制的方法"><a href="#ramp图控制的方法" class="headerlink" title="ramp图控制的方法"></a>ramp图控制的方法</h3><p><img src="image-20210812141044176.png" alt="image-20210812141044176"></p>
+<p>在PS制作了如上一张ramp图。ramp图代表不同明暗程度的区域需要取的阴影值。为了方便控制特地只16*16px的大小。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//梯度阴影</span></span><br><span class="line">float3 difframpcolor = (float3)(diffuse,diffuse,diffuse);</span><br><span class="line"><span class="comment">//梯度化</span></span><br><span class="line"><span class="built_in">float</span> toon = floor(diffuse*_ShadowRange)/_ShadowRange;</span><br><span class="line"><span class="comment">//将值映射到ramp图上。</span></span><br><span class="line">difframpcolor = tex2D(_Toonramp,float2(toon, toon)).rgb;</span><br><span class="line">float3 diffcol= difframpcolor* tex2D(_MainTex,i.uv).rgb * _LightColor0.rgb ;</span><br></pre></td></tr></table></figure>
+<p>得出的效果如下图</p>
+<p><img src="image-20210813101450093.png" alt="image-20210813101450093"></p>
+<p>阴影颜色与ramp图里的颜色稍有不同是因为我们采取了乘因子在basecolor上，要让美术理解这一点的话，可以说ramp图是一个正片叠底的图层。</p>
+<p><code>_ShadowRange</code>是用户可调整的值，这个值越大，阴影变化得越平滑，梯度越不明显。</p>
+<p><img src="image-20210812142232104.png" alt="image-20210812142232104" style="zoom:40%;" /><img src="image-20210812142154932.png" alt="image-20210812142154932" style="zoom:40%;" /></p>
+<p>图分别为<code>_ShadowRange</code>值为20和60时的效果。</p>
+<h3 id="原神头发阴影模拟"><a href="#原神头发阴影模拟" class="headerlink" title="原神头发阴影模拟"></a>原神头发阴影模拟</h3><p>对于一般的卡渲来上，上面的效果够用了。但是如果需要模仿原神头发阴影的卡渲效果，上面还不够相似。</p>
+<p><img src="image-20210812143035706.png" alt="image-20210812143035706"></p>
+<p><img src="image-20210813140734071.png" alt="image-20210813140734071"></p>
+<center>原神内的效果，两个色阶</center>
+
+<p>观察一下原神的头发阴影，一般只有两个色阶，一个只在阴影明暗分界处存在一小段宽度，另一个作为主要的阴影颜色。</p>
+<p>（图二的第二个色阶边缘有一些渐变我猜是因为在阳光下加了bloom的原因，如果猜错了也没办法，就按这样凑合做吧。）</p>
+<p>本人没有去找过原神的逆向，所以也不知道原神色阶的具体实现方法。通过ramp图的方法模仿原神的效果也不是不可以，需要我们建立一张只有两个色阶的ramp图，并且一个色阶所占的行数远小于另一个色阶。</p>
+<p><img src="image-20210812164111032.png" alt="image-20210812164111032"></p>
+<p><img src="image-20210812144454355.png" alt="image-20210812144454355"></p>
+<p>通过这种方式得到的效果看起来有些廉价，因为这里色阶边缘锐利程度和色阶梯度变化效果挂钩，（意思是想要阴影梯度化明显，就要接受肉眼可以观察到的锐利梯度边缘），利用ramp图来调整也不够方便，不同色阶之间没有过渡感。</p>
+<h3 id="更技术一点的方法"><a href="#更技术一点的方法" class="headerlink" title="更技术一点的方法"></a>更技术一点的方法</h3><p>上述一种方法主要依靠ramp图的调整，主要是美术的活，那有没有什么可以在技术层面就达到这种效果的方法呢？</p>
+<p>受了<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/95986273">知乎上这位的卡渲实现方法</a>的启发，这篇的作者在对于漫反射的梯度实现上，他采取了三个窗函数来控制梯度的变化，再根据窗函数的陡峭程度控制不同色阶内的模糊过渡。也就是说这个方法可以兼顾色阶的明显梯度变化和色阶间的过渡。</p>
+<p>因为我们只有两个色阶，所以只需要两个窗函数，其他部分与他的代码差异不大，在此就不贴了。</p>
+<p><img src="image-20210812161553379.png" alt="image-20210812161553379"  /><img src="image-20210812161451538.png" alt="image-20210812161451538"  /></p>
+<center>修改过后的效果。可以兼顾明显的梯度变化和色阶间的模糊过度
+   <br> （可以明显看出左右的模糊程度不同）</center>
+
+
+<p>同时也可以暴露每个色阶的阴影颜色参数来供用户修改阴影的色相。</p>
+<p>得到的效果还是可以接受的，可以稍微碰瓷一下原神了（误</p>
+<p><img src="image-20210812163530978.png" alt="image-20210812163530978"><img src="image-20210812181737973.png" alt="image-20210812181737973" style="zoom: 80%;" /></p>
+<center>调整一下颜色和色阶宽度，右图的效果可以模仿原神日光下阴影的红色分界线</center>
+
+
+
+<h3 id="减轻面部的漫反射"><a href="#减轻面部的漫反射" class="headerlink" title="减轻面部的漫反射"></a>减轻面部的漫反射</h3><p>这点是为了营造卡通感，不给面部太多会营造真实感的漫反射，米哈游的技术总监也在unite的分享大会上说过这一点。</p>
+<p><img src="image-20210812170805243.png" alt="image-20210812170805243"></p>
+<center>面部的漫反射过重不仅会减少卡通感，也会造成面部过脏的感觉，影响美术效果。</center>
+
+<p>实现也很简单，通过一张面部的mask来控制漫反射的程度，在计算<code>diffcolor</code>时乘上一个系数就好。</p>
+<p>（但是导入模型后发现刻晴面部是单独一个材质。所以针对这个模型，如果不想要保留部分漫反射的话其实不需要这么麻烦用mask，直接不给ramp图就可）</p>
+<p><img src="image-20210812170836506.png" alt="image-20210812170836506"></p>
+<center>控制漫反射后</center>
+
+<h3 id="面部的投影"><a href="#面部的投影" class="headerlink" title="面部的投影"></a>面部的投影</h3><p>面部的投影如果直接使用unity内置的计算阴影的函数效果会非常奇怪。据说原神自己魔改了unity的渲染管线，让模型阴影做到完全贴合卡通绘画的习惯。</p>
+<p>除此之外想要修改面部投影效果，常见的两种方式是修改模型的法线和基于SDF的面部阴影贴图两种方式。这里就先不实现，如果未来有时间再进行面部阴影样式的实现。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Unity/" rel="tag">Unity</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  <a href="/2021/08/02/Cel-shading2/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      【Cel-Shading】边缘光的实现
+      
+    </div>
+  </a>
+  
+  
+  <a href="/2021/07/28/%E5%85%B3%E4%BA%8E%E9%81%BF%E5%85%8D%E5%9C%A8shader%E4%B8%AD%E4%BD%BF%E7%94%A8%E6%9D%A1%E4%BB%B6%E5%88%A4%E6%96%AD%E8%AF%AD%E5%8F%A5/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">关于避免在shader中使用条件判断语句</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+</body>
+
+</html>
