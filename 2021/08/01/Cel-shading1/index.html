@@ -74,7 +74,9 @@
       
       <p>卡通渲染最基础的两部分应该就是梯度漫反射与描边。先来说比较简单的梯度漫反射。</p>
 <span id="more"></span>
-<p>大家学习shader的时候肯定都会尝试先写下最简单的兰伯特/半兰伯特光照模型，这里不用多说：</p>
+<p>最后效果：</p>
+<p><img src="image-20210812181737973.png" alt="image-20210812181737973"></p>
+<h1 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h1><p>大家学习shader的时候肯定都会尝试先写下最简单的兰伯特/半兰伯特光照模型，这里不用多说：</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">float3 worldNormal = normalize(i.worldNormal);</span><br><span class="line">float3 worldLightDir = normalize(_WorldSpaceLightPos0.xyz);</span><br><span class="line">float3 baseColor = tex2D(_MainTex,i.uv).rgb;</span><br><span class="line"></span><br><span class="line">float3 ambient = UNITY_LIGHTMODEL_AMBIENT.xyz * baseColor; <span class="comment">//环境光</span></span><br><span class="line"><span class="built_in">float</span> diffuse =  diffmask( tex2D(_DiffMap,i.uv).a ,  max(<span class="number">0</span>, dot(worldNormal, worldLightDir)) ) * shadow ;</span><br></pre></td></tr></table></figure>
 <p>多乘了一个<code>shadow</code>参数是因为我还计算了光照投影，打算一起打包了做阴影颜色的梯度化。</p>
 <p><img src="image-20210812140332071.png" alt="image-20210812140332071"></p>
