@@ -10,7 +10,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    Unity学习[长期更新] |
+    【Cel-Shading】基于SDF贴图的面部阴影实现 |
     
     Invictus maneo</title>
   
@@ -32,7 +32,7 @@
 <body>
   <main class="content">
     <section class="outer">
-  <article id="post-2021-2-1-Unity-install" class="article article-type-post" itemscope
+  <article id="post-Cel-shading4" class="article article-type-post" itemscope
   itemprop="blogPost" data-scroll-reveal>
 
   <div class="article-inner">
@@ -41,7 +41,7 @@
       
 
 <h1 class="article-title" itemprop="name">
-  Unity学习[长期更新]
+  【Cel-Shading】基于SDF贴图的面部阴影实现
 </h1>
 
 
@@ -51,12 +51,12 @@
 
     
     <div class="article-meta">
-      <a href="/2021/02/01/2021-2-1-Unity-install/" class="article-date">
-  <time datetime="2021-02-01T14:36:31.000Z" itemprop="datePublished">2021-02-01</time>
+      <a href="/2021/08/06/Cel-shading4/" class="article-date">
+  <time datetime="2021-08-06T14:36:31.000Z" itemprop="datePublished">2021-08-06</time>
 </a>
       
 <div class="article-category">
-  <a class="article-category-link" href="/categories/Unity%E5%AD%A6%E4%B9%A0/">Unity学习</a>
+  <a class="article-category-link" href="/categories/TA%E5%AD%A6%E4%B9%A0/">TA学习</a>
 </div>
 
     </div>
@@ -72,56 +72,18 @@
       
       
       
-      <p>首先占个坑。和室友约好寒假一起打卡入门Unity，希望下学期的游戏程序设计课不要死得太惨。</p>
+      <p>一般来说，卡渲都会对面部阴影进行单独的处理，使得面部阴影效果更贴近卡通绘画的习惯。</p>
+<p>本文中采取使用SDF贴图的方式来形成面部阴影，个人觉得比修改法线更简单快速。</p>
 <span id="more"></span>
-<p>今天先进行了Unity的安装，本来下午打算继续学习，但是被拉去爬山了，晚上不知道还能学多少，先记录一下~</p>
-<h1 id="Unity的安装"><a href="#Unity的安装" class="headerlink" title="Unity的安装"></a>Unity的安装</h1><h2 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h2><hr>
-<p><strong>Unity中国官网：</strong><a target="_blank" rel="noopener" href="https://unity.cn/">unity.cn/</a></p>
-<p>该站的语言是中文，比起在原官网下载速度快了不少，对没有梯子的小伙伴来说友好不少。</p>
-<p>在该站中我们需要下载的东西有两个：</p>
-<ul>
-<li><p>Unity Installer(根据自己环境选择mac/win)</p>
-</li>
-<li><p>Unity Hub</p>
-<p>Unity Hub是用来管理你的Unity的，有了它你可以同时使用多个不同版本的Unity。但是即使你只需要一个版本的Unity也需要下载Unity Hub，如果不下载在安装完Unity后的第一次打开时，Unity会提醒你安装Hub。</p>
-</li>
-</ul>
-<h1 id="Unity学习清单"><a href="#Unity学习清单" class="headerlink" title="Unity学习清单"></a>Unity学习清单</h1><hr>
-<p>学习Unity中，需要掌握的大约有以下内容：</p>
-<ul>
-<li>C#编程语言</li>
-<li>数据结构及算法（大部分已经在DS和ADS课上学习过，复习一遍即可）</li>
-<li>Unity手册和API  <a target="_blank" rel="noopener" href="https://connect.unity.com/doc">https://connect.unity.com/doc</a></li>
-</ul>
-<p>C#的学习参考菜鸟教程应该就够了：<a target="_blank" rel="noopener" href="https://www.runoob.com/csharp/csharp-tutorial.html">https://www.runoob.com/csharp/csharp-tutorial.html</a></p>
-<p>W3Cschool上也有Unity的入门学习教程：<a target="_blank" rel="noopener" href="https://www.w3cschool.cn/unity3d_jc/">https://www.w3cschool.cn/unity3d_jc/</a></p>
-<p>同时bilibili上已有很多Unity入门视频，随便搜索就能找到。</p>
-<p>Unity的商店中有丰富的场景资源，同时也可以自己建模。</p>
-<h1 id="贴图材质与着色器"><a href="#贴图材质与着色器" class="headerlink" title="贴图材质与着色器"></a>贴图材质与着色器</h1><hr>
-<p>Texture的类别：</p>
-<ul>
-<li>界面UI</li>
-<li>Mesh模型</li>
-<li>粒子效果</li>
-<li>视频资源（Move Texture）</li>
-<li>Render Texture 渲染贴图</li>
-</ul>
-<p>着色器：在Unity3D中，所有的材质都是由着色器语言编写出来的。由着色器语言编写的程序成为着色器、</p>
-<p>Unity内置着色器：</p>
-<ul>
-<li>标准着色器 </li>
-<li>透明着色器</li>
-<li>镂空着色器</li>
-<li>自发光着色器</li>
-<li>反射着色器</li>
-</ul>
-<h3 id="shaderLab"><a href="#shaderLab" class="headerlink" title="shaderLab"></a>shaderLab</h3><p>ShaderLab是Unity提供的编写Unity Shader的一种说明性语言。</p>
+<h2 id="SDF算法介绍"><a href="#SDF算法介绍" class="headerlink" title="SDF算法介绍"></a>SDF算法介绍</h2><p>首先我们需要搞清楚SDF算法生成的贴图是什么，为什么他不像写死在上AO的阴影，可以动态帮我们实现阴影效果？</p>
+<h2 id="SDF面部阴影图的获得"><a href="#SDF面部阴影图的获得" class="headerlink" title="SDF面部阴影图的获得"></a>SDF面部阴影图的获得</h2><p>知乎上有大佬写了一个<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/356185096">脚本</a>，可以直接生成这种面部光照图，要对图的效果进行修改也很容易，修改完example文件夹里的东西后再次运行脚本就可以啦~</p>
+<p>在此就不重复造轮子，偷懒直接用大佬的脚本生成的光照图，感谢大佬。</p>
 
       
     </div>
     <footer class="article-footer">
       
-<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Unity/" rel="tag">Unity</a></li></ul>
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Unity/" rel="tag">Unity</a></li></ul>
 
     </footer>
 
@@ -131,19 +93,19 @@
   
 <nav class="article-nav">
   
-  <a href="/2021/03/20/fog-shader/" class="article-nav-link">
+  <a href="/2021/08/06/Cel-shading3/" class="article-nav-link">
     <strong class="article-nav-caption">Newer</strong>
     <div class="article-nav-title">
       
-      【UnityShader】垂直雾的实现
+      【Cel-Shading】Backface法描边
       
     </div>
   </a>
   
   
-  <a href="/2021/01/29/ca_report/" class="article-nav-link">
+  <a href="/2021/08/06/cel-shading5/" class="article-nav-link">
     <strong class="article-nav-caption">Older</strong>
-    <div class="article-nav-title">RVO群组避障动画</div>
+    <div class="article-nav-title">【Cel-Shading】各向异性发丝高光</div>
   </a>
   
 </nav>

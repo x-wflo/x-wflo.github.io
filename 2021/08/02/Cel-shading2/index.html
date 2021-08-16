@@ -78,7 +78,7 @@
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">float</span> VoN = dot(viewDir, worldNormal);</span><br><span class="line">float3 F0 = float3(<span class="number">0.1</span>,<span class="number">0.1</span>,<span class="number">0.1</span>);</span><br><span class="line">float3 fresnel = F0 + (<span class="number">1</span> - F0) * pow(<span class="number">1</span> - VoN,<span class="number">5</span>);</span><br></pre></td></tr></table></figure>
 <p>下面讲一下遇到的一些问题~</p>
 <p>在shader中我没有开启背面剔除。因为一些开启后一些面片会因为法线方向背对摄像机方向从而遭到剔除。</p>
-<p><img src="%01PNT2$%I_2B`02{[8M9E.png" alt="img"></p>
+<p><img src="1.png" alt="img"></p>
 <center>裙子消失术</center>
 
 <p>使用<code>cull off</code>后裙子才能完整。</p>
@@ -127,6 +127,15 @@
   
   
 <nav class="article-nav">
+  
+  <a href="/2021/08/06/cel-shading5/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      【Cel-Shading】各向异性发丝高光
+      
+    </div>
+  </a>
   
   
   <a href="/2021/08/01/Cel-shading1/" class="article-nav-link">

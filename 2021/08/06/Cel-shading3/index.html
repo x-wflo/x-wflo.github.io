@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    【Cel-Shading】Backface法描边 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-Cel-shading3" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  【Cel-Shading】Backface法描边
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2021/08/06/Cel-shading3/" class="article-date">
+  <time datetime="2021-08-06T14:36:31.000Z" itemprop="datePublished">2021-08-06</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/TA%E5%AD%A6%E4%B9%A0/">TA学习</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>描边是卡通渲染的基础效果之一，也是卡通渲染中的一个难点。</p>
+<span id="more"></span>
+<p>在此篇中，我们使用的描边法是<code>backface</code>法。</p>
+<p>backface法的优点很多，实现方法简单，性能友好，可以通过在顶点色里储存该处扩张距离来实现描线粗细的变化；但是对于拥有内凹形状的模型，会出现背面面片遮挡正面面片的情况。</p>
+<h2 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h2><p><img src="image-20210816173349260.png" alt="image-20210816173349260"></p>
+<p><img src="image-20210816173616175.png" alt="image-20210816173616175"></p>
+<h2 id="实现过程"><a href="#实现过程" class="headerlink" title="实现过程"></a>实现过程</h2><p>原理就是通过多pass绘制，在描边的pass中进行<code>cull front</code>。在顶点着色器里将顶点沿着法线方向移动一段距离（移动距离的多少会决定描线的宽度），得到的视觉效果就是人物得到了一个轮廓的描边。</p>
+<p>用户可以输入参数控制描线宽度。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">Pass&#123;</span><br><span class="line">            Name <span class="string">&quot;OUTLINE&quot;</span></span><br><span class="line">            Tags&#123; <span class="string">&quot;LightMode&quot;</span> = <span class="string">&quot;Always&quot;</span> &#125;</span><br><span class="line">            Cull Front</span><br><span class="line">          </span><br><span class="line">            ColorMask RGB</span><br><span class="line">            Blend SrcAlpha OneMinusSrcAlpha</span><br><span class="line"></span><br><span class="line">            CGPROGRAM</span><br><span class="line">                <span class="meta">#<span class="meta-keyword">pragma</span> vertex vert</span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">pragma</span> fragment frag</span></span><br><span class="line"></span><br><span class="line">                <span class="meta">#include &quot;UnityCG.cginc&quot;</span></span><br><span class="line">                </span><br><span class="line">                <span class="keyword">struct</span> appdata &#123;</span><br><span class="line">                    float4 vertex : POSITION;</span><br><span class="line">                    float3 normal : NORMAL;</span><br><span class="line">                    float4 uv : TEXCOORD0;</span><br><span class="line"></span><br><span class="line">                &#125;;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">struct</span> v2f &#123;</span><br><span class="line">                    float4 pos : SV_POSITION;</span><br><span class="line">                    float4 uv : TEXCOORD0;</span><br><span class="line">                    </span><br><span class="line">                &#125;;</span><br><span class="line"></span><br><span class="line">                uniform <span class="built_in">float</span> _OutlineWidth;</span><br><span class="line">                sampler2D _MainTex;</span><br><span class="line">                float4 _OutlineColor;</span><br><span class="line">                </span><br><span class="line"></span><br><span class="line">                <span class="function">v2f <span class="title">vert</span>(<span class="params">appdata v</span>)</span> &#123;</span><br><span class="line">                    v2f o;</span><br><span class="line">                    o.pos = UnityObjectToClipPos(v.vertex);</span><br><span class="line">                    <span class="comment">//把法线从模型空间坐标转为观察空间坐标</span></span><br><span class="line">                    float3 norm = mul((float3x3)UNITY_MATRIX_IT_MV, v.normal);</span><br><span class="line">                    <span class="comment">//将观察空间的法线xy转换到投影空间</span></span><br><span class="line">                    float2 extendDir = normalize(TransformViewToProjection(norm));</span><br><span class="line">                    o.pos.xy += extendDir * (o.pos.w * _OutlineWidth * <span class="number">0.05</span>);</span><br><span class="line">                    o.uv = v.uv;</span><br><span class="line">                    </span><br><span class="line">                    <span class="keyword">return</span> o;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="function">float4 <span class="title">frag</span>(<span class="params">v2f i</span>) :COLOR</span>&#123;</span><br><span class="line">                    float4 c = tex2D(_MainTex, i.uv);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">return</span> float4(c.rgb* _OutlineColor.rgb, <span class="number">1.0</span>);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                ENDCG</span><br><span class="line"></span><br><span class="line">		&#125;<span class="comment">//Pass</span></span><br></pre></td></tr></table></figure>
+<h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><h4 id="描边断开问题"><a href="#描边断开问题" class="headerlink" title="描边断开问题"></a>描边断开问题</h4><p>第一个问题是backface法中常见的问题，即法线不连续产生的线条断开问题。这个问题的产生是因为unity的mesh中储存的法线信息为面法线，当遇到两个面相接的顶点时，因为法线信息产生突变，就会遇到这种结果。</p>
+<p><img src="image-20210816153715563.png" alt="image-20210816153715563"></p>
+<center>在边缘尖锐处，会发生明显的线条断开</center>
+
+<p><img src="image-20210816171610088.png" alt="image-20210816171610088"></p>
+<center>我们的模型中也有这个问题</center>
+
+<p>解决方式是在模型导入unity前就进行平滑法线的操作，或者在unity里使用编辑器工具/脚本来动态平滑法线。具体操作是将相同位置的顶点法线数据进行平均计算，计算的结果就是平滑后的法线。</p>
+<p>这是一个简单的平滑法线脚本：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> System.Collections;</span><br><span class="line"><span class="keyword">using</span> System.Collections.Generic;</span><br><span class="line"><span class="keyword">using</span> UnityEngine;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">SmoothNormal</span> : <span class="title">MonoBehaviour</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="function">Mesh <span class="title">MeshNormalAverage</span>(<span class="params">Mesh mesh</span>)</span></span><br><span class="line"><span class="function"></span>    &#123;</span><br><span class="line">        Dictionary&lt;Vector3, List&lt;<span class="built_in">int</span>&gt;&gt; map = <span class="keyword">new</span> Dictionary&lt;Vector3, List&lt;<span class="built_in">int</span>&gt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">int</span> v = <span class="number">0</span>; v &lt; mesh.vertexCount; ++v)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (!map.ContainsKey(mesh.vertices[v]))</span><br><span class="line">            &#123;</span><br><span class="line">                map.Add(mesh.vertices[v], <span class="keyword">new</span> List&lt;<span class="built_in">int</span>&gt;());</span><br><span class="line">            &#125;</span><br><span class="line">            map[mesh.vertices[v]].Add(v);</span><br><span class="line">        &#125;</span><br><span class="line">        Vector3[] normals = mesh.normals;</span><br><span class="line">        Vector3 normal;</span><br><span class="line">        <span class="keyword">foreach</span>(<span class="keyword">var</span> p <span class="keyword">in</span> map)</span><br><span class="line">        &#123;</span><br><span class="line">            normal = Vector3.zero;</span><br><span class="line">            <span class="keyword">foreach</span> (<span class="keyword">var</span> n <span class="keyword">in</span> p.Value)</span><br><span class="line">            &#123;</span><br><span class="line">                normal += mesh.normals[n];</span><br><span class="line">            &#125;</span><br><span class="line">            normal /= p.Value.Count;</span><br><span class="line">            <span class="keyword">foreach</span> (<span class="keyword">var</span> n <span class="keyword">in</span> p.Value)</span><br><span class="line">            &#123;</span><br><span class="line">                normals[n] = normal;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">var</span> tangents = <span class="keyword">new</span> Vector4[mesh.vertexCount];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; mesh.vertexCount; j++)</span><br><span class="line">        &#123;</span><br><span class="line">            tangents[j] = <span class="keyword">new</span> Vector4(normals[j].x, normals[j].y, normals[j].z, <span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        mesh.tangents= tangents;</span><br><span class="line">        <span class="keyword">return</span> mesh;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Awake</span>(<span class="params"></span>)</span></span><br><span class="line"><span class="function"></span>    &#123;</span><br><span class="line">        <span class="keyword">if</span> (GetComponent&lt;MeshFilter&gt;())</span><br><span class="line">        &#123;</span><br><span class="line">            Mesh tempMesh = (Mesh)Instantiate(GetComponent&lt;MeshFilter&gt;().sharedMesh);</span><br><span class="line">            tempMesh=MeshNormalAverage(tempMesh);</span><br><span class="line">            gameObject.GetComponent&lt;MeshFilter&gt;().sharedMesh = tempMesh;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (GetComponent&lt;SkinnedMeshRenderer&gt;())</span><br><span class="line">        &#123;</span><br><span class="line">            Mesh tempMesh = (Mesh)Instantiate(GetComponent&lt;SkinnedMeshRenderer&gt;().sharedMesh);</span><br><span class="line">            tempMesh = MeshNormalAverage(tempMesh);</span><br><span class="line">            gameObject.GetComponent&lt;SkinnedMeshRenderer&gt;().sharedMesh = tempMesh;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="image-20210816154722661.png" alt="image-20210816154722661"></p>
+<center>挂上脚本后的效果</center>
+
+<p>脚本中我把最后平滑后得到的信息存在了模型的切线数据中，而不是直接覆盖原来的法线信息，这是有原因的：根据效果发现平滑后的法线对光照也有点影响，部分区域会出现不正常的阴影效果。</p>
+<p><img src="未标题-1.jpg" alt="未标题-1"></p>
+<p>我的解决方法是把平滑后的法线结果存在切线数据里，在绘制描边的那个pass里用法线时直接取切线里的数据，而计算阴影的pass用原来的法线数据。这样既能在描边时用到平滑的法线，在计算光照时也能不受影响。</p>
+<p>最后结果：</p>
+<p><img src="image-20210816171251612.png" alt="image-20210816171251612"></p>
+<center>效果还算不错</center>
+
+
+
+<h4 id="去除一些不必要的线条的问题"><a href="#去除一些不必要的线条的问题" class="headerlink" title="去除一些不必要的线条的问题"></a>去除一些不必要的线条的问题</h4><p>其实这个问题就是backface法里通过贴图的通道控制线条粗细是一件事</p>
+<p>因为眼珠与脸是不同的材质，所以在眼眶周围也会出现一圈描线。</p>
+<p><img src="image-20210816172316842.png" alt="image-20210816172316842"></p>
+<p>按照绘画的习惯，一般此处我们是不会在此处添加线条的。所以我们需要一个能控制线条粗细的输入，或者像乐乐姐的做法一样，控制下该处法线的z offest，让线条被遮蔽，归根结底还是需要一张能控制的贴图数据。</p>
+<p>可以通过basecolor的alpha通道来进行这项操作，技术上的实现很简单，就是多读下tex的alpha通道值，作为粗线宽外扩；但是比较难的是在美术上绘制一张这样的贴图。一般可以通过编辑器来绘画，这方面的实现就放在后续中如果有时间再实现。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Unity/" rel="tag">Unity</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  
+  <a href="/2021/08/06/Cel-shading4/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">【Cel-Shading】基于SDF贴图的面部阴影实现</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2021</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+</body>
+
+</html>

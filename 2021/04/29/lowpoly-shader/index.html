@@ -93,7 +93,8 @@
 <h2 id="一些限制"><a href="#一些限制" class="headerlink" title="一些限制"></a>一些限制</h2><p>这个shader的限制也很明显，就是最后lowpoly化后的效果和原模型的面片数量会进行一个直接的挂钩。</p>
 <p>比如图上这个鸭子模型，虽然我们对它使用了shader，它也成功地lowpoly化了，但是由于模型本身的面数很高，lowpoly化后还是拥有比较多的面和细节，这对于lowpoly来说是不合格的。同时因为geometry shader是SM4.0的技术，所以手机上可能无法达到相应的效果。</p>
 <p><img src="duck.gif" alt="image-4"></p>
-<h2 id="其他得到LowPoly风格的方法"><a href="#其他得到LowPoly风格的方法" class="headerlink" title="其他得到LowPoly风格的方法"></a>其他得到LowPoly风格的方法</h2><h4 id="Unity内部直接进行软硬边转换"><a href="#Unity内部直接进行软硬边转换" class="headerlink" title="Unity内部直接进行软硬边转换"></a>Unity内部直接进行软硬边转换</h4><p>在Unity中，Unity是可以直接帮我们做到软硬边的转换的。它的原理其实就是重新拆点、重新计算点法线。</p>
+<h2 id="其他得到LowPoly风格的方法"><a href="#其他得到LowPoly风格的方法" class="headerlink" title="其他得到LowPoly风格的方法"></a>其他得到LowPoly风格的方法</h2><p>主要是从unity入门精要作者乐乐姐的blog那边看到的~</p>
+<h4 id="Unity内部直接进行软硬边转换"><a href="#Unity内部直接进行软硬边转换" class="headerlink" title="Unity内部直接进行软硬边转换"></a>Unity内部直接进行软硬边转换</h4><p>在Unity中，Unity是可以直接帮我们做到软硬边的转换的。它的原理其实就是重新拆点、重新计算点法线。</p>
 <p><img src="20160527103913920" alt="这里写图片描述"></p>
 <p>在我们导入一个模型后，可以在模型的导入面板中的Normals &amp; Tangents块中，把Normals设置成Calculate模式、把Smoothing Angle设置成0就可以得到硬边的效果。把所有相连的边在建模软件中设置成硬边（Hard Edge）后，软件就会进行拆顶点的工作，每个三角形有各自属于自己的三个顶点，不与他人共用，这三个顶点的点法线计算不会受毗连三角形的影响，而仅仅是由该三角面片的面法线决定。</p>
 <p>这样的模型可以直接使用任何普通的Shader进行渲染，就会得到flat shading的效果。但这种方式会增加顶点的数目。</p>
