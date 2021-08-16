@@ -56,7 +56,7 @@
 </a>
       
 <div class="article-category">
-  <a class="article-category-link" href="/categories/unity/">unity</a>
+  <a class="article-category-link" href="/categories/TA%E5%AD%A6%E4%B9%A0/">TA学习</a>
 </div>
 
     </div>
@@ -127,7 +127,7 @@
 <center>控制漫反射后</center>
 
 <h3 id="面部的投影"><a href="#面部的投影" class="headerlink" title="面部的投影"></a>面部的投影</h3><p>面部的投影如果直接使用unity内置的计算阴影的函数效果会非常奇怪。据说原神自己魔改了unity的渲染管线，让阴影做到完全贴合卡通绘画的习惯。</p>
-<p><img src="1.png" alt="image-20210817010346623"></p>
+<p><img src="image-20210817004323091.png" alt="image-20210817004323091"></p>
 <center>根据漫反射模型直接计算出来的，<br>一看就让人不想要的面部阴影效果</center>
 
 <p>除此之外想要修改面部投影效果，常见的两种方式是修改模型的法线和基于SDF的面部阴影贴图两种方式。这里就先不实现，如果未来有时间再进行面部阴影样式的实现。</p>
@@ -325,21 +325,6 @@
 
 <script src="/js/ocean.js"></script>
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
