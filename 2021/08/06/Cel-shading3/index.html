@@ -76,7 +76,7 @@
 <span id="more"></span>
 <p>在此篇中，我们使用的描边法是<code>backface</code>法。</p>
 <p>backface法的优点很多，实现方法简单，性能友好，可以通过在顶点色里储存该处扩张距离来实现描线粗细的变化；但是对于拥有内凹形状的模型，会出现背面面片遮挡正面面片的情况。</p>
-<h2 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h2><p><img src="image-20210816173349260.png" alt="image-20210816173349260"></p>
+<h2 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h2><p><img src="image-20210817105842753.png" alt="image-20210817105842753"></p>
 <p><img src="image-20210816173616175.png" alt="image-20210816173616175"></p>
 <h2 id="实现过程"><a href="#实现过程" class="headerlink" title="实现过程"></a>实现过程</h2><p>原理就是通过多pass绘制，在描边的pass中进行<code>cull front</code>。在顶点着色器里将顶点沿着法线方向移动一段距离（移动距离的多少会决定描线的宽度），得到的视觉效果就是人物得到了一个轮廓的描边。</p>
 <p>用户可以输入参数控制描线宽度。</p>
@@ -298,6 +298,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>

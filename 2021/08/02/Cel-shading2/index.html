@@ -71,6 +71,16 @@
     <div class="article-entry" itemprop="articleBody">
       
       
+<div class="article-gallery">
+  <div class="article-gallery-photos">
+    
+    
+    <img src="https://x-wflo.github.io/2021/08/02/Cel-shading2/image-20210813135858630.png" itemprop="image">
+    
+    
+  </div>
+</div>
+
       
       <p>边缘光的实现方法中，最传统的应该是菲涅尔边缘光，在博客那篇PBR入门里也讲了一些菲涅尔的原理。</p>
 <span id="more"></span>
@@ -303,6 +313,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>

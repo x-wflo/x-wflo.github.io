@@ -89,6 +89,7 @@
 
 
 <h2 id="SDF算法介绍"><a href="#SDF算法介绍" class="headerlink" title="SDF算法介绍"></a>SDF算法介绍</h2><p>首先我们需要搞清楚SDF算法生成的贴图是什么，为什么他不像写死在上AO的阴影，可以动态帮我们实现阴影效果？</p>
+<p>SDF算法可以实现图像之间的平滑过渡，只需要对两张SDF进行<code>lerp</code>的插值，就可以得到视觉上的平滑过渡效果。（本质上是距离间的平滑过渡）</p>
 <h2 id="SDF面部阴影图的获得"><a href="#SDF面部阴影图的获得" class="headerlink" title="SDF面部阴影图的获得"></a>SDF面部阴影图的获得</h2><p>知乎上有大佬写了一个<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/356185096">脚本</a>，可以直接生成这种面部光照图，要对图的效果进行修改也很容易，修改完example文件夹里的东西后再次运行脚本就可以啦~</p>
 <p>在此就不重复造轮子，偷懒直接用大佬的脚本生成的光照图，感谢大佬。</p>
 <p>在运行完脚本后，我们获得了这样一张混合光照图：</p>
@@ -276,6 +277,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
