@@ -71,6 +71,16 @@
     <div class="article-entry" itemprop="articleBody">
       
       
+<div class="article-gallery">
+  <div class="article-gallery-photos">
+    
+    
+    <img src="https://x-wflo.github.io/2021/08/12/Cel-shading4/xu0n1-1rr3p.gif" itemprop="image">
+    
+    
+  </div>
+</div>
+
       
       <p>一般来说，卡渲都会对面部阴影进行单独的处理，使得面部阴影效果更贴近卡通绘画的习惯。</p>
 <p>本文中采取使用SDF贴图的方式来形成面部阴影，个人觉得比修改法线更简单快速。</p>
@@ -277,6 +287,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>

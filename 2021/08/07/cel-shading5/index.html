@@ -71,6 +71,16 @@
     <div class="article-entry" itemprop="articleBody">
       
       
+<div class="article-gallery">
+  <div class="article-gallery-photos">
+    
+    
+    <img src="https://x-wflo.github.io/2021/08/07/cel-shading5/image-20210816112034278.png" itemprop="image">
+    
+    
+  </div>
+</div>
+
       
       <p>发丝高光不像普通的高光，我们必须对头发高光做单独处理。</p>
 <span id="more"></span>
@@ -84,7 +94,7 @@
 <p>发丝的环状高光其实也是许多根发丝的点状高光组成的，造但为了节省资源和制作难度，我们会用一个面片去替代很多根发丝，最终就造成了这个问题。</p>
 <p>为了复现头发高光的样式，我们需要制作各向异性的材质。关于各向异性的定义，网上已经有了很多，在此就不必赘述。</p>
 <h1 id="Kajiya-Kay光照模型"><a href="#Kajiya-Kay光照模型" class="headerlink" title="Kajiya-Kay光照模型"></a>Kajiya-Kay光照模型</h1><p>先上最后的实现效果：</p>
-<p><img src="Y%RZ877$B98KOOIR]S`}DOE.png" alt="img"></p>
+<p><img src="1.png" alt="img"></p>
 <p>Kajiya-Kay模型是在制作各向异性头发高光时一个常用的模型。原理很简单，用切线方向来计算该处的高光强度。</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="built_in">float</span> <span class="title">StrandSpecular</span>(<span class="params">float3 T, float3 V, float3 L, <span class="built_in">float</span> exponent,<span class="built_in">float</span> scale</span>)</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">		float3 H = normalize(L + V);</span><br><span class="line">		<span class="built_in">float</span> dotTH = dot(T, H);</span><br><span class="line">		<span class="built_in">float</span> sinTH = sqrt(<span class="number">1.0</span> - dotTH * dotTH);</span><br><span class="line">		<span class="built_in">float</span> dirAtten = smoothstep(<span class="number">-1.0</span>, <span class="number">0.0</span>, dotTH);</span><br><span class="line">		<span class="keyword">return</span> dirAtten * pow(sinTH, exponent)* scale;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>在顶点着色器中：</p>
@@ -300,6 +310,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
