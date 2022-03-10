@@ -10,7 +10,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    关于避免在shader中使用条件判断语句 |
+    【UPR】Unity卡通水体渲染 |
     
     Invictus maneo</title>
   
@@ -32,7 +32,7 @@
 <body>
   <main class="content">
     <section class="outer">
-  <article id="post-关于避免在shader中使用条件判断语句" class="article article-type-post" itemscope
+  <article id="post-water" class="article article-type-post" itemscope
   itemprop="blogPost" data-scroll-reveal>
 
   <div class="article-inner">
@@ -41,7 +41,7 @@
       
 
 <h1 class="article-title" itemprop="name">
-  关于避免在shader中使用条件判断语句
+  【UPR】Unity卡通水体渲染
 </h1>
 
 
@@ -51,8 +51,8 @@
 
     
     <div class="article-meta">
-      <a href="/2021/07/28/%E5%85%B3%E4%BA%8E%E9%81%BF%E5%85%8D%E5%9C%A8shader%E4%B8%AD%E4%BD%BF%E7%94%A8%E6%9D%A1%E4%BB%B6%E5%88%A4%E6%96%AD%E8%AF%AD%E5%8F%A5/" class="article-date">
-  <time datetime="2021-07-28T14:36:31.000Z" itemprop="datePublished">2021-07-28</time>
+      <a href="/2021/11/08/water/" class="article-date">
+  <time datetime="2021-11-08T14:36:31.000Z" itemprop="datePublished">2021-11-08</time>
 </a>
       
 <div class="article-category">
@@ -64,32 +64,46 @@
 
     
     
+<div class="tocbot"></div>
+
     
 
     <div class="article-entry" itemprop="articleBody">
       
       
       
-      <p>事情起因是前一天写了一个包含溶解、蒙版功能的shader。</p>
+      <p>在unity的UPR中实现卡通水体渲染效果。</p>
 <span id="more"></span>
-<p><img src="image-20210803140250331.png" alt="image-20210803140250331"></p>
-<p><img src="image-20210803140307087.png" alt="image-20210803140307087"></p>
-<center>当时写的使用手册里的部分截图</center>
-
-
-
-<p>在shader中我判断此部分应有的透明度时使用了if判断语句，根据map中的灰度值判断此处的透明度。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (dissolveValue.r &lt; threshold )</span><br><span class="line">&#123;   </span><br><span class="line">     col.a=<span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(lerpValue &gt; _ColorFactorA)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (lerpValue &gt; _ColorFactorB)</span><br><span class="line">    	<span class="keyword">return</span> <span class="built_in">float4</span>(_DissolveColorB.rgb,col.a);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">float4</span>(_DissolveColorA.rgb,col.a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>后来被前辈看到代码后就提醒我尽量不要在着色器中使用实时的条件判断语句，因为这样会导致GPU并行计算的优点无法被使用。</p>
-<p>关于着色器中if语句的替代方法，可以参考<a target="_blank" rel="noopener" href="http://theorangeduck.com/page/avoiding-shader-conditionals">这篇文章</a>。</p>
-<p>修改后的代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">col.a=col.a * ( <span class="number">1</span> - <span class="built_in">max</span>(<span class="built_in">sign</span>(threshold - dissolveValue.r), <span class="number">0.0</span>));</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> <span class="built_in">lerp</span>(col, <span class="built_in">float4</span>(_DissolveColorB.rgb,col.a),<span class="built_in">max</span>(<span class="built_in">sign</span>(lerp - _ColorFactorA), <span class="number">0.0</span>));</span><br></pre></td></tr></table></figure>
+<h1 id="效果图"><a href="#效果图" class="headerlink" title="效果图"></a>效果图</h1><p><img src="D:\blog\myBlog\source\_posts\water\4mecf-k7k65.gif" alt="4mecf-k7k65"></p>
+<h3 id="效果需求"><a href="#效果需求" class="headerlink" title="效果需求"></a>效果需求</h3><p>制作该水体渲染时，为达成效果主要需要制作三个部分：</p>
+<ul>
+<li>水体深浅变化</li>
+<li>泡沫（白色海浪）往岸边推进</li>
+<li>水底折射、扰乱</li>
+</ul>
+<p>有了以上三点可以做成一个简单的水体效果。下面开始逐步进行制作。</p>
+<h3 id="水体深浅变化"><a href="#水体深浅变化" class="headerlink" title="水体深浅变化"></a>水体深浅变化</h3><p>水体深浅变化的过程由深度纹理来实现。通过顶点在屏幕空间中的位置与深度值来计算水深。</p>
+<p><img src="D:\blog\myBlog\source\_posts\water\beach-depth-diagram.png" alt="img"></p>
+<p>最重要的一步：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">float</span> depthDifference = existingDepthLinear - i.screenPosition.w;</span><br></pre></td></tr></table></figure>
+<p>得出结果：</p>
+<p><img src="C:\Users\Buoyancy\Desktop\TA\[URP]Unity卡通水体渲染\image-20220306140138380.png" alt="image-20220306140138380" style="zoom: 67%;" /></p>
+<p>再利用<code>lerp</code>来进行颜色的渐变。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">float4 depthColor = lerp(_DepthGradientShallow,_DepthGradientDeep,dep_norm);</span><br></pre></td></tr></table></figure>
+<p>最后效果：</p>
+<p><img src="D:\blog\myBlog\source\_posts\water\image-20220306164212380.png" alt="image-20220306164212380"></p>
+<h3 id="水底扭曲效果"><a href="#水底扭曲效果" class="headerlink" title="水底扭曲效果"></a>水底扭曲效果</h3><p>由于做的是非真实感绘制，也不需要多逼真的折射效果，就做一般的扭曲效果就行了。</p>
+<p>扭曲效果制作非常简单，本质上是偏移UV，以产生扭曲的结果。因此需要输入一张噪声图。</p>
+<p>在Unity的Build-in渲染管线下可以在合适的时机使用GrabPass截图，但是在URP管线下没有GrabPass了，想要获取截图只有<code>_CameraColorTexture</code>和<code>_CameraOpaqueTexture</code></p>
+<p>对象渲染完毕后的画面生成在URP可以通过管线设置文件勾选<code>Opaque Texture</code>实现，然后便可在Shader声明<code>_CameraColorTexture</code>调用。<code>_CameraOpaqueTexture</code>是在不透明通道渲染后截图，所以截不到半透明的物体,<code>_CameraColorTexture</code>是在半透明通道渲染后和PostProcessing后截图。</p>
+<p><img src="D:\blog\myBlog\source\_posts\water\akgh8-38bg9.gif" alt="img"></p>
+<h3 id="海浪"><a href="#海浪" class="headerlink" title="海浪"></a>海浪</h3><p>原理暂时搁置，等有空补充。</p>
 
       
     </div>
     <footer class="article-footer">
       
-<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TA/" rel="tag">TA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/shader/" rel="tag">shader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93/" rel="tag">渲染</a></li></ul>
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TA/" rel="tag">TA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93/" rel="tag">渲染</a></li></ul>
 
     </footer>
 
@@ -99,19 +113,10 @@
   
 <nav class="article-nav">
   
-  <a href="/2021/08/01/Cel-shading1/" class="article-nav-link">
-    <strong class="article-nav-caption">Newer</strong>
-    <div class="article-nav-title">
-      
-      【Cel-Shading】梯度漫反射的实现
-      
-    </div>
-  </a>
   
-  
-  <a href="/2021/07/09/PBR%E5%85%A5%E9%97%A82/" class="article-nav-link">
+  <a href="/2021/08/14/Cel-shading/" class="article-nav-link">
     <strong class="article-nav-caption">Older</strong>
-    <div class="article-nav-title">PBR入门2</div>
+    <div class="article-nav-title">【Cel-Shading】unity中仿原神的卡通渲染实现</div>
   </a>
   
 </nav>
@@ -154,7 +159,7 @@
 </ul>
     </div>
     <ul class="list-inline">
-      <li>Invictus maneo &copy; 2021</li>
+      <li>Invictus maneo &copy; 2022</li>
       
         <li>京ICP备17054916号-2</li>
       
@@ -274,21 +279,6 @@
 
 <script src="/js/ocean.js"></script>
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
