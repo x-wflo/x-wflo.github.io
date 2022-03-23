@@ -98,6 +98,9 @@
 <p>对象渲染完毕后的画面生成在URP可以通过管线设置文件勾选<code>Opaque Texture</code>实现，然后便可在Shader声明<code>_CameraColorTexture</code>调用。<code>_CameraOpaqueTexture</code>是在不透明通道渲染后截图，所以截不到半透明的物体,<code>_CameraColorTexture</code>是在半透明通道渲染后和PostProcessing后截图。</p>
 <p><img src="akgh8-38bg9.gif" alt="img"></p>
 <h3 id="海浪"><a href="#海浪" class="headerlink" title="海浪"></a>海浪</h3><p>原理暂时搁置，等有空补充。</p>
+<p>【2022.3.23补充】海浪部分中，关于海浪的推进方向，我之前想到的是通过切线方向或者手动输入参数来控制海浪方向。但是经今天的启发，意识到可以利用之前得到的深度信息，将每个点的深度信息看作一个sin函数的相位差。再加上一个时间参数，就可以不用手动控制也能得到海浪向岸边推进的效果。</p>
+<p>同时也不需要函数或是texture来控制海浪的长条形状，只需要一个噪声texture。</p>
+<p>由于在毕设和找工作中没什么时间实现该点，等有空进行一个海浪部分的重新制作。</p>
 
       
     </div>
@@ -113,11 +116,11 @@
   
 <nav class="article-nav">
   
-  <a href="/2021/12/08/huihuan/" class="article-nav-link">
+  <a href="/2021/12/08/grass/" class="article-nav-link">
     <strong class="article-nav-caption">Newer</strong>
     <div class="article-nav-title">
       
-      【计算机程序设计课作业】3D游戏《回环》
+      【UPR】Unity卡通动态草地实现
       
     </div>
   </a>
