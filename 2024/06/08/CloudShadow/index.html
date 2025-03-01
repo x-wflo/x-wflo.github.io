@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    【TA】一些游戏中几种云影方案的比较和实现 |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-CloudShadow" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  【TA】一些游戏中几种云影方案的比较和实现
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2024/06/08/CloudShadow/" class="article-date">
+  <time datetime="2024-06-08T04:18:31.000Z" itemprop="datePublished">2024-06-08</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/TA%E5%AD%A6%E4%B9%A0/">TA学习</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+      
+      <p>一些能实现动态云影效果的方案。</p>
+<span id="more"></span>
+<h1 id="几种云影方案的比较和实现"><a href="#几种云影方案的比较和实现" class="headerlink" title="几种云影方案的比较和实现"></a>几种云影方案的比较和实现</h1><p>当游戏中存在天气系统的时候，经常会出现对地面的云影需求，思考了一些云影实现的方案，在此提出。</p>
+<h3 id="后处理云影"><a href="#后处理云影" class="headerlink" title="后处理云影"></a>后处理云影</h3><p>通过拿到屏幕深度这张贴图，可以还原出屏幕中每个位置的坐标，通过偏导数ddy ddy函数可以还原世界坐标法线。（当然如果你的项目中有DepthNormal Pass那就当我什么都没说）</p>
+<p>通过深度信息和视线方向重建世界坐标，完成从屏幕坐标到世界坐标的映射。</p>
+<p>映射完成后可以利用重建得到的世界坐标，进行云影贴图效果的采样。</p>
+<p>对于比较简单和固定的视角，我们可以直接利用世界坐标的xz方向，进行云影移动的采样，但是这样采样的结果是正投云影，即所有竖直方向上的影子都是拉伸的。在现实中，这显然是很不科学的，因为很少存在太阳垂直射向地面的效果，基本一直是斜射的。</p>
+<p><img src="image-20240711203924494.png" alt="image-20240711203924494" style="zoom:50%;" /></p>
+<h4 id="解决拉伸"><a href="#解决拉伸" class="headerlink" title="解决拉伸"></a>解决拉伸</h4><p>对于云影，其实我们需要云影的投射方向和光照的方向相同即可，因此我们直接在直射光的光照空间里进行采样就行。这样采样的结果符合物理直觉，也不会在建筑上产生拉伸。</p>
+<p>unity拥有内置的世界空间转直射光光照空间的矩阵<code>_MainLightWorldToLight</code>，利用这个矩阵可以将世界空间下的坐标转为光照空间下的坐标，而且在光照方向进行变换的时候，云影可以进行同步的变化。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">float2 positionLS = mul(_MainLightWorldToLight, float4(poistionWS, <span class="number">1</span>)).xy;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">&#96;&#96;&#96;c#</span><br><span class="line">float2 positionUV &#x3D; positionLS * 0.5 + 0.5;</span><br></pre></td></tr></table></figure>
+<p><img src="image-20240711205615807.png" alt="image-20240711205615807" style="zoom:50%;" /></p>
+<h2 id="lightCookie"><a href="#lightCookie" class="headerlink" title="lightCookie"></a>lightCookie</h2><p>直接利用内置的LightCookie功能进行云影效果的制作。</p>
+<p>想要动态的云影飘动效果，可以用特定的关键字在管线中改写LightCookie采样的这部分，这种方式的消耗比较小，也可以使用Unity提供的<code>CustomRenderTexture</code>来实现动态的采样</p>
+<h4 id="CustomRenderTexture"><a href="#CustomRenderTexture" class="headerlink" title="CustomRenderTexture"></a>CustomRenderTexture</h4>
+      
+    </div>
+    <footer class="article-footer">
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TA/" rel="tag">TA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93/" rel="tag">渲染</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  <a href="/2024/09/11/StylizedHighlight/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      【TA】可模拟各种形状的风格化高光
+      
+    </div>
+  </a>
+  
+  
+  <a href="/2024/05/08/CheapVolumeLighting/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">【TA】低成本点光和体积光</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2025</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+</body>
+
+</html>

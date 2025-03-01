@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  
+  
+  
+  <meta name="description" content="作业堆积地，计女一个。">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>
+    【三方向映射】贴图采样次数为原来1/3的Triplanar Mapping |
+    
+    Invictus maneo</title>
+  
+  <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<script src="/js/pace.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <main class="content">
+    <section class="outer">
+  <article id="post-Triplanar-Dither" class="article article-type-post" itemscope
+  itemprop="blogPost" data-scroll-reveal>
+
+  <div class="article-inner">
+    
+    <header class="article-header">
+      
+
+<h1 class="article-title" itemprop="name">
+  【三方向映射】贴图采样次数为原来1/3的Triplanar Mapping
+</h1>
+
+
+
+    </header>
+    
+
+    
+    <div class="article-meta">
+      <a href="/2023/11/14/Triplanar-Dither/" class="article-date">
+  <time datetime="2023-11-14T14:36:31.000Z" itemprop="datePublished">2023-11-14</time>
+</a>
+      
+<div class="article-category">
+  <a class="article-category-link" href="/categories/TA%E5%AD%A6%E4%B9%A0/">TA学习</a>
+</div>
+
+    </div>
+    
+
+    
+    
+<div class="tocbot"></div>
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+      
+<div class="article-gallery">
+  <div class="article-gallery-photos">
+    
+    
+    <img src="https://x-wflo.github.io/2021/08/14/Cel-shading/image-20210817162553879.png" itemprop="image">
+    
+    
+  </div>
+</div>
+
+      
+      <p>将三方向映射的贴图采样量降为原来1/3 ，即不需要额外多次采样的技术。</p>
+<span id="more"></span>
+<p><strong>本文为原创内容，转载请注明地址。</strong></p>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>三方向映射（<strong>Triplanar Mapping</strong>），是一项在地形贴图制作和一些需要任意角度覆盖模型时候比较常用的技术，通常来避免纹理的拉伸和接缝。</p>
+<p>但是这项技术存在的一个弊端是，由于在每个方向上都会进行一次采样，因此贴图的采样量是常规方法的三倍。而一般来说，对于常规的PBR方案，一个模型上我们存在三张贴图：BaseColorMap、RMA、Normal，因此贴图采样量会扩展到3*3=9次上。</p>
+<p>本方案旨在提供一种比较cheap的三方向方案，其采样的贴图数不会额外增加，即对于拥有BaseColorMap、RMA、Normal三张贴图的模型来说，采样数仍然为3。</p>
+<h1 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h1><p>灵感来源于gdc18上Far Cry 5在地形渲染技术分享中的一个小技术方案，用来降低不同层之间混合的采样数量，他们命名这个技术为”stochastic cliff shading”。中心思想是用随机混合来代替透明度混合。</p>
+<p><img src="image-20240315230555845.png" alt="image-20240315230555845"></p>
+<p>我们不难发现这项技术在游戏中其实已经有很深入的应用了，包括用来做发丝的渐变和人物的遮挡渐隐。</p>
+<p><img src="image-20240315230922753.png" alt="image-20240315230922753" style="zoom:50%;" /></p>
+<p><img src="image-20240315231034153.png" alt="image-20240315231034153" style="zoom: 50%;" /></p>
+<p>在一开始这个方案也被我采用在本组项目的地形方案中，来制作不同地形中层与层之间的混合。也确实获得了不错的混合效果，可以替代Alpha Blending.</p>
+<p><img src="image-20240315231228134.png" alt="image-20240315231228134" style="zoom:50%;" /></p>
+<p>在后续的地形方案制作，主要是做悬崖贴片的过程中，突然想到或许这东西或许同样能用在三方向映射上？</p>
+<p>遂进行验证和实现，最后虽然有部分局限，但是整体的效果还是不错的。最主要的是解决了多次采样的问题，那还要什么自行车~</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>可以使用抖动数组来完成我们对透明度的处理。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> dither = Dither8x8Bayer( fmod(clipScreen.x, <span class="number">8</span>), fmod(clipScreen.y, <span class="number">8</span>) );</span><br><span class="line"><span class="type">float</span> XPlane = <span class="built_in">round</span>( ( Alpha.x + ( ( ( <span class="number">1.0</span> - Alpha.x ) * Alpha.x ) * dither) ) );</span><br><span class="line"><span class="type">float</span> YPlane = <span class="built_in">round</span>( ( Alpha.y + ( ( ( <span class="number">1.0</span> - Alpha.y ) * Alpha.y ) * dither) ) );</span><br><span class="line"></span><br><span class="line">float2 uv = lerp(PositionWS.xy,PositionWS.zy,XPlane);</span><br><span class="line">uv = lerp(uv,PositionWS.xz,YPlane);</span><br></pre></td></tr></table></figure>
+<p>uv此时因为抖动的原因会在边界混合出计算mipmap等级时候出现跳变，为了效果我们需要用ddx和ddy手动用原uv来计算正确的mipmap等级。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">half4 albedoAlpha = SAMPLE_TEXTURE2D_GRAD(_BaseMap, sampler_BaseMap, uv,ddx(uv0),ddy(uv0));</span><br></pre></td></tr></table></figure>
+<p>对于法线和粗糙度等图的采样也需要这个设置。</p>
+<h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><p>由于uv采样的不连续，会使得采样器在计算mipmap的时候出现跳变的问题，因此必须自己通过ddx ddy来进行mipmap等级的指定。</p>
+<h3 id="法线的特殊处理"><a href="#法线的特殊处理" class="headerlink" title="法线的特殊处理"></a>法线的特殊处理</h3><p>和普通的三方向映射一样，我们也需要对法线做特殊处理。由于三方向映射的旋转无关性，我们此时不能使用切线空间来计算法线，应该把法线贴图的采样结果当作一种世界法线，然后再完成法线贴图对每个面的映射效果。</p>
+<p><a target="_blank" rel="noopener" href="https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a">三方向映射的法线处理</a></p>
+<p>由于我们的法线贴图只进行了一次采样，因此无法做到每个方向的法线贴图的细节混合，因此使用最基本的Swizzle法进行每个方向的法线的映射即可。</p>
+<p>此时我们得到的其实是一个六边形上每个面上的法线值，即存在于六个平面上的法线值，我们需要将他与物体实际的法线效果结果，需要进行物体法线和法线贴图的混合。<a target="_blank" rel="noopener" href="https://blog.selfshadow.com/publications/blending-in-detail/">法线的混合</a></p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//UDN Blending</span></span><br><span class="line">Normal = SafeNormalize(float3(WorldNormal.xy + Normal.xy,Normal.z));</span><br></pre></td></tr></table></figure>
+<h1 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h1>
+      
+    </div>
+    <footer class="article-footer">
+      
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li></ul>
+
+    </footer>
+
+  </div>
+
+  
+  
+<nav class="article-nav">
+  
+  <a href="/2024/05/08/CheapVolumeLighting/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      【TA】低成本点光和体积光
+      
+    </div>
+  </a>
+  
+  
+  <a href="/2022/12/08/returnHome/" class="article-nav-link">
+    <strong class="article-nav-caption">Older</strong>
+    <div class="article-nav-title">【毕设】个人独立游戏《返家》</div>
+  </a>
+  
+</nav>
+
+  
+
+  
+  
+<div class="vcomments" id="vcomments"></div>
+
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
+
+<script>
+  new Valine({
+    el: '#vcomments',
+    appId: 'mfbB7edDpCCCx0ovfWDbEHTx-gzGzoHsz',
+    appKey: '44y9taHcuYYfj5R9F9yTCMzu',
+    notify: 'false',
+    verify: 'true',
+    avatar: 'mp',
+    pageSize: '10',
+    placeholder: '即刻评论，无需登录...'
+  })
+</script>
+
+  
+  
+
+</article>
+</section>
+    <footer class="footer">
+  <div class="outer">
+    <div class="float-right">
+      <ul class="list-inline">
+  
+  <li><i class="fe fe-smile-alt"></i> <span id="busuanzi_value_site_uv"></span></li>
+  
+  <li><i class="fe fe-bookmark"></i> <span id="busuanzi_value_page_pv"></span></li>
+  
+</ul>
+    </div>
+    <ul class="list-inline">
+      <li>Invictus maneo &copy; 2025</li>
+      
+        <li>京ICP备17054916号-2</li>
+      
+      <li>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></li>
+      <li>theme  <a target="_blank" rel="noopener" href="https://github.com/zhwangart/hexo-theme-ocean">Ocean</a></li>
+    </ul>
+  </div>
+</footer>
+  </main>
+  <aside class="sidebar">
+    <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/hexo.svg" alt="Invictus maneo"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">Home</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">Archives</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/gallery">Gallery</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/about">About</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">categories</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">Tags</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link nav-item-search" title="Search">
+        <i class="fe fe-search"></i>
+        Search
+      </a>
+    </li>
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      <div class="totop" id="totop">
+  <i class="fe fe-rocket"></i>
+</div>
+    </li>
+    <li class="nav-item">
+      
+      <a class="nav-item-link" target="_blank" href="/atom.xml" title="RSS Feed">
+        <i class="fe fe-feed"></i>
+      </a>
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+  </aside>
+  
+<script src="/js/jquery-2.0.3.min.js"></script>
+
+
+<script src="/js/jquery.justifiedGallery.min.js"></script>
+
+
+<script src="/js/lazyload.min.js"></script>
+
+
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/copybtn.js"></script>
+
+
+
+
+
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  // Tocbot_v4.7.0  http://tscanlin.github.io/tocbot/
+  tocbot.init({
+    tocSelector: '.tocbot',
+    contentSelector: '.article-entry',
+    headingSelector: 'h1, h2, h3, h4, h5, h6',
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    positionFixedSelector: '.tocbot',
+    positionFixedClass: 'is-position-fixed',
+    fixedSidebarOffset: 'auto',
+  });
+</script>
+
+
+
+<script src="/js/ocean.js"></script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+</body>
+
+</html>
