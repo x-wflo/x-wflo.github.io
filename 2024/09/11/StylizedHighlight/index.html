@@ -76,7 +76,7 @@
 <span id="more"></span>
 <h1 id="可模拟各种形状的风格化高光"><a href="#可模拟各种形状的风格化高光" class="headerlink" title="可模拟各种形状的风格化高光"></a>可模拟各种形状的风格化高光</h1><p>在风格化渲染种，我们经常采用Blinn-Phong模型，用半角向量和法线的点乘来做风格化高光的效果，再进一步，用副切线来代替法线来计算各向异性高光。</p>
 <p>之前看到的一篇论文<a target="_blank" rel="noopener" href="http://dalab.se.sjtu.edu.cn/gp2019/reference/stylized_highlight.pdf">stylized_highlight</a>中描述了如何通过类似于布尔的操作将高光变为其他形状。很有趣，所以复现了一下。</p>
-<p><img src="E:\Blog\image-20250224201436008.png" alt="image-20250224201436008" style="zoom:50%;" /></p>
+<p><img src="image-20250224201436008.png" alt="image-20250224201436008" style="zoom:50%;" /></p>
 <p><img src="C:\Users\YH-100539\AppData\Roaming\Typora\typora-user-images\image-20240722202446892.png" alt="image-20240722202446892"></p>
 <h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>通过对半角向量的布尔操作来做到点乘的结果的差异性，最终实现特殊形状。</p>
 <p>高光的形状，其实就是由不同点上高光的强弱（衰减）决定的。因为高光的强弱是由法线和半角向量的点乘决定的，半角向量越靠近法线，就越靠近高光计算的中心，因此可以把各个计算都移动到切线空间，半角向量和y轴（法线）的差异就是高光的强弱衰减。</p>
