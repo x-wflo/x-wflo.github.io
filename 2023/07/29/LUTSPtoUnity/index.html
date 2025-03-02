@@ -10,7 +10,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    【毕设】个人独立游戏《返家》 |
+    【TA】Unity后效进SP（Unity和SP效果对齐） |
     
     Invictus maneo</title>
   
@@ -32,7 +32,7 @@
 <body>
   <main class="content">
     <section class="outer">
-  <article id="post-returnHome" class="article article-type-post" itemscope
+  <article id="post-LUTSPtoUnity" class="article article-type-post" itemscope
   itemprop="blogPost" data-scroll-reveal>
 
   <div class="article-inner">
@@ -41,7 +41,7 @@
       
 
 <h1 class="article-title" itemprop="name">
-  【毕设】个人独立游戏《返家》
+  【TA】Unity后效进SP（Unity和SP效果对齐）
 </h1>
 
 
@@ -51,8 +51,8 @@
 
     
     <div class="article-meta">
-      <a href="/2022/12/08/returnHome/" class="article-date">
-  <time datetime="2022-12-08T14:36:31.000Z" itemprop="datePublished">2022-12-08</time>
+      <a href="/2023/07/29/LUTSPtoUnity/" class="article-date">
+  <time datetime="2023-07-29T10:17:31.000Z" itemprop="datePublished">2023-07-29</time>
 </a>
       
 <div class="article-category">
@@ -72,34 +72,18 @@
       
       
       
-      <p>在毕业了~我们的毕设环节可以选择写毕业论文复现算法或者是个人手搓一个游戏，果断选手搓游戏。就这样独立完成了人生中第一个属于我自己的游戏（不考虑独立做完的游戏，算上参与的话，是人生中第三个）</p>
-<p>来复盘一下，顺便展示一些使用的技术点。</p>
+      <p>SP基础的后处理效果和Unity对齐。</p>
 <span id="more"></span>
-<h1 id="画面展示"><a href="#画面展示" class="headerlink" title="画面展示"></a>画面展示</h1><p><img src="image-20240714221328932.png" alt="image-20240714221328932" style="zoom: 50%;" /></p>
-<p><img src="image-20240714222129341.png" alt="image-20240714222129341"></p>
-<p><img src="image-20240714221403967.png" alt="image-20240714221403967" style="zoom:50%;" /></p>
-<p><img src="image-20240714221426741.png" alt="image-20240714221426741" style="zoom:50%;" /></p>
-<p><img src="image-20240714221721816.png" alt="image-20240714221721816"></p>
-<p><img src="image-20240714221754876.png" alt="image-20240714221754876"></p>
-<h1 id="游戏玩法"><a href="#游戏玩法" class="headerlink" title="游戏玩法"></a>游戏玩法</h1><p>游戏内容是千与千寻式的一个误入森林的小女孩和森林里生活的各式精怪鬼魂交流，完成任务，并找到回家的路的过程。</p>
-<p>玩法层面参与了前两年出的一个我很感兴趣的独立游戏《朝圣者》。简而言之就是玩家可以在游戏中获得十数种道具，通过道具和npc交互可以推进剧情发展。但是一个npc会对不止一种道具起反应，意思是，玩家可以发挥自己的脑洞，思考这个道具可以在哪些地方发挥出作用，不同的使用方式会导向不同的剧情发展，但是大部分时候只要使用得当，玩家都能找到回家的路。总共有六条可以通关的线路。</p>
-<p><img src="1.jpg" alt="1"></p>
-<h1 id="一些渲染技术方案点"><a href="#一些渲染技术方案点" class="headerlink" title="一些渲染技术方案点"></a>一些渲染技术方案点</h1><h3 id="3D像素化风格"><a href="#3D像素化风格" class="headerlink" title="3D像素化风格"></a>3D像素化风格</h3><p>这个游戏最鲜明的风格点就是像素化的风格。我使用的是一种通过屏幕位置坐标和dither来将3D模型像素化的方案。</p>
-<p>通俗来讲，通过物体在屏幕中的位置，计算他们像素化的大小，以及对于边缘进行点阵或者方格状的alpha clip，对于内部的basecolor或者光照效果，利用dither来对uv进行偏移，最后用上color grading来混合做到了像素化的效果。</p>
-<p><img src="2.png" alt="2"></p>
-<p>人物模型都是我自己在Zbrush里手搓的，很丑哈。</p>
-<h3 id="God-ray"><a href="#God-ray" class="headerlink" title="God ray"></a>God ray</h3><p>圣光。用来模拟林间光束落下时候的丁达尔效应。用粒子系统再做点漂浮的尘点效果是绝杀。</p>
-<p><img src="image-20240714221403967.jpeg" alt="img"></p>
-<p>没啥好说的就是用billboard效果做的，让光束面片始终正对着镜头。</p>
-<h3 id="水面涟漪"><a href="#水面涟漪" class="headerlink" title="水面涟漪"></a>水面涟漪</h3><p><img src="D:\blog\myBlog\source\_posts\returnHome\image-20250223211155394.png" alt="image-20250223211155394" style="zoom:50%;" /></p>
-<p>主角在水面上行走过后会留下涟漪印记。</p>
-<p>根据一张RVT记录人物轨迹，实时计算涟漪的范围。</p>
-
+<p><strong>本文为原创内容，转载请注明地址。</strong></p>
+<p>在调整完我们的基础后效时（即明确Lookdev场景后），模型颜色在SP和Unity层面就存在色差，本篇的目的是在基础的后效处理后</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>unity在后处理阶段的所有处理，会被整合为一张LUT图，输出后通过ColorGrading来进行后效的叠加。</p>
+<p>很巧的是SP支持LUT图的添加，因此我们如果能直接拿到这张LUT图，根据SP的LUT格式输出，然后在SP中使用这张LUT图，那么就能实现SP后效和Unity的对齐。</p>
+<h1 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h1>
       
     </div>
     <footer class="article-footer">
       
-<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TA/" rel="tag">TA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93/" rel="tag">渲染</a></li></ul>
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li></ul>
 
     </footer>
 
@@ -109,19 +93,19 @@
   
 <nav class="article-nav">
   
-  <a href="/2023/07/29/LUTSPtoUnity/" class="article-nav-link">
+  <a href="/2023/11/14/Triplanar-Dither/" class="article-nav-link">
     <strong class="article-nav-caption">Newer</strong>
     <div class="article-nav-title">
       
-      【TA】Unity后效进SP（Unity和SP效果对齐）
+      【三方向映射】贴图采样次数为原来1/3的Triplanar Mapping
       
     </div>
   </a>
   
   
-  <a href="/2022/01/20/technology/" class="article-nav-link">
+  <a href="/2022/12/08/returnHome/" class="article-nav-link">
     <strong class="article-nav-caption">Older</strong>
-    <div class="article-nav-title">【特效】传送门特效</div>
+    <div class="article-nav-title">【毕设】个人独立游戏《返家》</div>
   </a>
   
 </nav>

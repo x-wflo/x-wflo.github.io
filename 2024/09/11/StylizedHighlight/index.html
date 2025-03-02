@@ -71,12 +71,22 @@
     <div class="article-entry" itemprop="articleBody">
       
       
+<div class="article-gallery">
+  <div class="article-gallery-photos">
+    
+    
+    <img src="https://x-wflo.github.io/2024/09/11/StylizedHighlight/image-20250224201436008.png" itemprop="image">
+    
+    
+  </div>
+</div>
+
       
       <p>复现之前看到的风格化高光论文。</p>
 <span id="more"></span>
 <h1 id="可模拟各种形状的风格化高光"><a href="#可模拟各种形状的风格化高光" class="headerlink" title="可模拟各种形状的风格化高光"></a>可模拟各种形状的风格化高光</h1><p>在风格化渲染种，我们经常采用Blinn-Phong模型，用半角向量和法线的点乘来做风格化高光的效果，再进一步，用副切线来代替法线来计算各向异性高光。</p>
 <p>之前看到的一篇论文<a target="_blank" rel="noopener" href="http://dalab.se.sjtu.edu.cn/gp2019/reference/stylized_highlight.pdf">stylized_highlight</a>中描述了如何通过类似于布尔的操作将高光变为其他形状。很有趣，所以复现了一下。</p>
-<p><img src="image-20250224201436008.png" alt="image-20250224201436008" style="zoom:50%;" /></p>
+<p><img src="image-20250224201436008.png" alt="image-20250224201436008" style="zoom:30%;" /></p>
 <p><img src="C:\Users\YH-100539\AppData\Roaming\Typora\typora-user-images\image-20240722202446892.png" alt="image-20240722202446892"></p>
 <h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>通过对半角向量的布尔操作来做到点乘的结果的差异性，最终实现特殊形状。</p>
 <p>高光的形状，其实就是由不同点上高光的强弱（衰减）决定的。因为高光的强弱是由法线和半角向量的点乘决定的，半角向量越靠近法线，就越靠近高光计算的中心，因此可以把各个计算都移动到切线空间，半角向量和y轴（法线）的差异就是高光的强弱衰减。</p>
@@ -86,11 +96,21 @@
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tangentHalfDir = tangentHalfDir + float3(_TranslationX, _TranslationY, <span class="number">0</span>);</span><br><span class="line">tangentHalfDir = normalize(tangentHalfDir);</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>方化</p>
-<p>计算半程向量与切线空间 X 轴和 Y 轴的夹角(与法线和切线的夹角)，通过再重新映射这个弧度值来做到角度值比较小的时候，变化比较平缓，当角度值增大的时候达到一个突变，使得高光从圆形变成一个方形。</p>
+<p>计算半程向量与切线空间 X 轴和 Y 轴的夹角(与法线和切线的夹角)，通过再重新映射这个弧度值来做到角度值比较小的时候，变化比较平缓，当角度值增大的时候达到一个突变，使得高光从圆形变成一个方形。类似于将高光变化的相关性从该点和中心点的距离变为该点和中心点为原点的坐标轴直线的距离。</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Square</span></span><br><span class="line"><span class="built_in">float</span> sqrThetaX = acos(tangentHalfDir.x);</span><br><span class="line"><span class="built_in">float</span> sqrThetaY = acos(tangentHalfDir.y);</span><br><span class="line"><span class="built_in">float</span> sqrnormX = sin(pow(<span class="number">2</span> * sqrThetaX, _SquareN));</span><br><span class="line"><span class="built_in">float</span> sqrnormY = sin(pow(<span class="number">2</span> * sqrThetaY, _SquareN));</span><br><span class="line">tangentHalfDir = tangentHalfDir - _SquareScale * (sqrnormX * tangentHalfDir.x * fixed3(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>) + sqrnormY * tangentHalfDir.y * fixed3(<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>));</span><br><span class="line">				tangentHalfDir = normalize(tangentHalfDir);</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
-
+<ul>
+<li><p>旋转</p>
+<p>类似于向量旋转矩阵，没啥好说的。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">float</span> xRad = _RotationX * DegreeToRadian;</span><br><span class="line">float3x3 xRotation = float3x3(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>,</span><br><span class="line">						<span class="number">0</span>, cos(xRad), sin(xRad),</span><br><span class="line">                       <span class="number">0</span>, -sin(xRad), cos(xRad));</span><br><span class="line"><span class="built_in">float</span> yRad = _RotationY * DegreeToRadian;</span><br><span class="line">float3x3 yRotation = float3x3(cos(yRad), <span class="number">0</span>, -sin(yRad),</span><br><span class="line">							<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>,</span><br><span class="line">							sin(yRad), <span class="number">0</span>, cos(yRad));</span><br><span class="line"><span class="built_in">float</span> zRad = _RotationZ * DegreeToRadian;</span><br><span class="line">float3x3 zRotation = float3x3(cos(zRad), sin(zRad), <span class="number">0</span>,</span><br><span class="line">							-sin(zRad), cos(zRad), <span class="number">0</span>,</span><br><span class="line">							<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>);								</span><br><span class="line">tangentHalfDir = mul(zRotation, mul(yRotation, mul(xRotation, tangentHalfDir)));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>缩放</p>
+<p>相当于控制半角向量在x轴和y轴之上的分量，例如 _ScaleX 是正数时，就是将 tangentHalfDir 向 x 轴负方向拉动，从而在 x 轴上“压缩”高光。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Scale</span></span><br><span class="line">tangentHalfDir = tangentHalfDir - _ScaleX * tangentHalfDir.x * fixed3(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">tangentHalfDir = normalize(tangentHalfDir);</span><br><span class="line">tangentHalfDir = tangentHalfDir - _ScaleY * tangentHalfDir.y * fixed3(<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>);</span><br><span class="line">tangentHalfDir = normalize(tangentHalfDir);</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h2>
       
     </div>
     <footer class="article-footer">
@@ -104,6 +124,15 @@
   
   
 <nav class="article-nav">
+  
+  <a href="/2025/01/14/HighLightMarmosetModel/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      【TA】Marmoset头发高光Model复刻进Unity
+      
+    </div>
+  </a>
   
   
   <a href="/2024/06/08/CloudShadow/" class="article-nav-link">

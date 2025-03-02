@@ -87,7 +87,9 @@
 <p><img src="image-20240711205615807.png" alt="image-20240711205615807" style="zoom:50%;" /></p>
 <h2 id="lightCookie"><a href="#lightCookie" class="headerlink" title="lightCookie"></a>lightCookie</h2><p>直接利用内置的LightCookie功能进行云影效果的制作。</p>
 <p>想要动态的云影飘动效果，可以用特定的关键字在管线中改写LightCookie采样的这部分，这种方式的消耗比较小，也可以使用Unity提供的<code>CustomRenderTexture</code>来实现动态的采样</p>
-<h4 id="CustomRenderTexture"><a href="#CustomRenderTexture" class="headerlink" title="CustomRenderTexture"></a>CustomRenderTexture</h4>
+<h4 id="CustomRenderTexture"><a href="#CustomRenderTexture" class="headerlink" title="CustomRenderTexture"></a>CustomRenderTexture</h4><p>CustomRenderTexture类是对RenderTexture类的一个扩充。我们可以使用Shader来实时地更新纹理，将我们需要的信息保存在纹理中，以方便使用。这一技术可以用来进行很多复杂的模拟，比如：腐蚀、水面产生的涟漪、刚体表面的粘稠流体（血液、熔岩）等等。</p>
+<p>将云影的动态移动和随着天气变化变大变小的效果加入该Shader中，就能得到light Cookie+动态云影的效果。</p>
+
       
     </div>
     <footer class="article-footer">
