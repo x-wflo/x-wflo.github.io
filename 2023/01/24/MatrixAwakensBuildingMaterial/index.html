@@ -10,7 +10,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    【TA】风格化树材质调优全过程 |
+    【TA】黑客帝国觉醒程序化建筑配套材质系统拆解 |
     
     Invictus maneo</title>
   
@@ -32,7 +32,7 @@
 <body>
   <main class="content">
     <section class="outer">
-  <article id="post-TreeRenderModel" class="article article-type-post" itemscope
+  <article id="post-MatrixAwakensBuildingMaterial" class="article article-type-post" itemscope
   itemprop="blogPost" data-scroll-reveal>
 
   <div class="article-inner">
@@ -41,7 +41,7 @@
       
 
 <h1 class="article-title" itemprop="name">
-  【TA】风格化树材质调优全过程
+  【TA】黑客帝国觉醒程序化建筑配套材质系统拆解
 </h1>
 
 
@@ -51,8 +51,8 @@
 
     
     <div class="article-meta">
-      <a href="/2024/04/22/TreeRenderModel/" class="article-date">
-  <time datetime="2024-04-22T10:17:31.000Z" itemprop="datePublished">2024-04-22</time>
+      <a href="/2023/01/24/MatrixAwakensBuildingMaterial/" class="article-date">
+  <time datetime="2023-01-24T04:18:31.000Z" itemprop="datePublished">2023-01-24</time>
 </a>
       
 <div class="article-category">
@@ -71,33 +71,66 @@
     <div class="article-entry" itemprop="articleBody">
       
       
+<div class="article-gallery">
+  <div class="article-gallery-photos">
+    
+    
+    <img src="https://img.3dmgame.com/uploads/images/news/20231020/1697772484_137274.jpg" itemprop="image">
+    
+    
+  </div>
+</div>
+
       
-      <p>风格化渲染树的材质渲染已经是一个很大的类目了，一些基础的处理不再赘述。此处提出我个人为了提升效果琢磨的一些方式方案。</p>
+      <p>《黑客帝国：觉醒》使用了大量程序化生产的建筑，为了使建筑的外观更加多样化，项目组也使用了一套程序化的材质体系。在此对该套材质进行一个拆解。</p>
 <span id="more"></span>
-<p><strong>本文为原创内容，转载请注明地址。</strong></p>
-<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><img src="f8daf433ab3795d3cfda078d0359c41c.png" alt="img" style="zoom:10%;" /></p>
-<p><img src="1ac0cb7c51c8758c5d4dec425232794a.png" alt="img" style="zoom:33%;" /></p>
-<p><img src="228f87531e6a10c873e2eb687c5895a1_720.png" alt="img" style="zoom:33%;" /></p>
-<p>这是美术提供的参考图，整个参考图我提取的美术特点信息效果如下：</p>
+<h1 id="基础纹理"><a href="#基础纹理" class="headerlink" title="基础纹理"></a>基础纹理</h1><p>材质不像大部分材质一样采样一张BaseMap来生成Albedo。有一张基础的记录了所有墙体的基础花纹的StyleMap。该做法主要是为了打破相同模块的相似性，做到破Tiling（通过颜⾊Variation和random函数）。</p>
+<p>StyleMap只储存了灰度信息，此处的灰度信息可以理解为对于颜色的差异值的一个记录（在HSV通道上进行偏移），通过UDIM和InstanceRandomID，再结合该灰度信息，可以在创造出多变的微妙色差，做微⼩的Tint Color变化，在大体颜色相同的建筑群里做到纹理破Tiling的效果。</p>
+<p><img src="image-20250304223805820.png" alt="image-20250304223805820"></p>
+<p>复现如下。大片墙体但是几乎不存在重复感。</p>
+<p><img src="Untitled.png" alt="img"></p>
+<p><img src="image-20250304224251678.png" alt="image-20250304224251678"></p>
+<h2 id="模型UV"><a href="#模型UV" class="headerlink" title="模型UV"></a>模型UV</h2><p>模型拥有两套UV</p>
 <ul>
-<li>重点细节信息都在亮部或者明暗过度处</li>
-<li>暗部较整体、模糊，形状不突出</li>
-<li>光照球形</li>
+<li>texcord[0]：模型定制UV，会包括基础纹素的tile、AoMask、Dirty Mask</li>
+<li>texcord[1]：Block模块专属的UV，控制block纹理的排布，block line带来的dirtyMask和AO Mask。</li>
 </ul>
-<h1 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h1><p>我做了的工作：</p>
+<p>处理Block模块上没有block的零碎部件：<br>将这部分的UV的U部分放置在[-1,0]的部分中，在平铺block的时候判断U的取值，再另外处理这部分的采样值。</p>
+<h2 id="脏渍"><a href="#脏渍" class="headerlink" title="脏渍"></a>脏渍</h2><p>UV纹理+世界坐标随机纹理 两种脏渍结合。</p>
 <ul>
-<li>拍平、模糊暗部的GI效果</li>
-<li>暗部阴影颜色更加风格化、整体，降低Diffuse信息</li>
-<li>使得光照效果更整块，不细碎</li>
+<li><p>UV纹理特点：<br>定制纹理，可以在更符合现实情况的地⽅出现脏渍<br>缺乏随机感，当⼤⾯积使⽤的时候会出现平铺感</p>
+</li>
+<li><p>世界坐标随机纹理：</p>
+<p>刚好与上⾯相反</p>
+</li>
 </ul>
-<h5 id="总的效果"><a href="#总的效果" class="headerlink" title="总的效果"></a>总的效果</h5><p>从左到右原始——&gt;处理完成</p>
-<p><img src="162ee366e625b85f0a3304323c04eb6_720.png" alt="img" style="zoom:50%;" /></p>
+<p>将两个⼀起使⽤可以充分结合两者的⻓处，创造出符合逻辑⼜有随机感的纹理。</p>
+<p>UV定制脏渍纹理：</p>
+<ul>
+<li>Drip Grime<ul>
+<li>DripGrime分为三层，Large Grime 、Medium Grime和Detail Grime</li>
+</ul>
+</li>
+<li>世界坐标随机纹理：<ul>
+<li>Broad Grime</li>
+<li>Ground Grime</li>
+<li>stain Light</li>
+</ul>
+</li>
+</ul>
+<p><img src="image-20250304224841977.png" alt="image-20250304224841977" style="zoom:50%;" /></p>
+<h2 id="破损边缘"><a href="#破损边缘" class="headerlink" title="破损边缘"></a>破损边缘</h2><p>位于建筑的边缘处，模拟涂料的掉落、边⾓的磨损效果。</p>
+<p><img src="image-20250304224914840.png" alt="image-20250304224914840" style="zoom:33%;" /><img src="image-20250304224919757.png" alt="image-20250304224919757" style="zoom:33%;" /></p>
+<p><img src="image-20250304224928377.png" alt="image-20250304224928377" style="zoom:33%;" /></p>
+<p>使⽤建筑的曲率Map来作为⼀个Mask，保证Edge Damage都处在⼀个边缘处，在此基础<br>上再使⽤随机噪声来完成破损边缘的随机性。</p>
+<h2 id="边缘裂隙"><a href="#边缘裂隙" class="headerlink" title="边缘裂隙"></a>边缘裂隙</h2><p><img src="image-20250304225021615.png" alt="image-20250304225021615"></p>
+<p>⽤AO+随机噪声图做的，默认AO越强的地⽅越靠近建筑间的缝隙。</p>
 
       
     </div>
     <footer class="article-footer">
       
-<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li></ul>
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TA/" rel="tag">TA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93/" rel="tag">渲染</a></li></ul>
 
     </footer>
 
@@ -107,19 +140,19 @@
   
 <nav class="article-nav">
   
-  <a href="/2024/04/22/FakeEmissiveLamp/" class="article-nav-link">
+  <a href="/2023/07/29/LUTSPtoUnity/" class="article-nav-link">
     <strong class="article-nav-caption">Newer</strong>
     <div class="article-nav-title">
       
-      【TA】假透光效果灯具
+      【TA】Unity后效进SP（Unity和SP效果对齐）
       
     </div>
   </a>
   
   
-  <a href="/2024/03/12/TerrianTiling/" class="article-nav-link">
+  <a href="/2022/12/08/returnHome/" class="article-nav-link">
     <strong class="article-nav-caption">Older</strong>
-    <div class="article-nav-title">【TA】地形的破Tiling效果实现和对比</div>
+    <div class="article-nav-title">【毕设】个人独立游戏《返家》</div>
   </a>
   
 </nav>
