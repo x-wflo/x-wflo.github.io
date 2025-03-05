@@ -10,7 +10,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>
-    【TA】Marmoset头发高光Model复刻进Unity |
+    【TA】CapluseAO在Unity里的实现 |
     
     Invictus maneo</title>
   
@@ -32,7 +32,7 @@
 <body>
   <main class="content">
     <section class="outer">
-  <article id="post-HighLightMarmosetModel" class="article article-type-post" itemscope
+  <article id="post-CapluseAO" class="article article-type-post" itemscope
   itemprop="blogPost" data-scroll-reveal>
 
   <div class="article-inner">
@@ -41,7 +41,7 @@
       
 
 <h1 class="article-title" itemprop="name">
-  【TA】Marmoset头发高光Model复刻进Unity
+  【TA】CapluseAO在Unity里的实现
 </h1>
 
 
@@ -51,8 +51,8 @@
 
     
     <div class="article-meta">
-      <a href="/2025/01/14/HighLightMarmosetModel/" class="article-date">
-  <time datetime="2025-01-14T14:36:31.000Z" itemprop="datePublished">2025-01-14</time>
+      <a href="/2025/01/26/CapluseAO/" class="article-date">
+  <time datetime="2025-01-26T09:18:31.000Z" itemprop="datePublished">2025-01-26</time>
 </a>
       
 <div class="article-category">
@@ -72,23 +72,27 @@
       
       
       
-      <p>将八猴的FlowMap和头发高光模型复刻进Unity。</p>
+      <p>CapluseAO的实现。</p>
 <span id="more"></span>
-<p><strong>本文为原创内容，转载请注明地址。</strong></p>
-<h1 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h1><p>之前给项目组做过一版Unity内的编辑器HairFlowMapEditor和头发高光的模型，但是项目组美术同学认为不太好使+效果不是很满意。在尝试过八猴的FlowMap和头发高光模型后美术表示给我整一个这玩意，于是去扒一下八猴shader部分的源码看看怎么复刻。</p>
-<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>八猴的实现主要在这几个文件里：<code>anisoParams.frag</code> <code>lightAnisotropic.frag</code> <code>sampleAnisotropic.frag</code></p>
-<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">_pAnisoRoughnessToA( roughness, a, ax, ay,uAnisoAspect );</span><br><span class="line"><span class="comment">//unity to Marmoset Space</span></span><br><span class="line">half3 normalNoise = normal;</span><br><span class="line">normal = lerp(vertexNormal,normal,_SpecularNoiseStrength);</span><br><span class="line">normal = normalize(normal);</span><br><span class="line"></span><br><span class="line"><span class="comment">//Area light adjustments look a bit odd with anisotropy; could use improvement.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//get tangent surface parameters</span></span><br><span class="line">float3 anisTangent, anisBitangent;</span><br><span class="line">_pAnisoGetBasis( normal,uAnisoDirectionMapScaleBias,uAnisoRotation,tangent,bitangent ,uv,anisTangent,anisBitangent);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>对贴图储存的方向进行一个从（0，1）—-&gt;（-1，1）的重映射。</p>
-<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">   uAnisoDirectionMapScaleBias =half2(<span class="number">2</span>,<span class="number">-1</span>);</span><br><span class="line">tex_specular = SAMPLE_TEXTURE2D( _AnisoDirectionMap, sampler_AnisoDirectionMap,vertexTexCoord );</span><br><span class="line">tangent.xy = tex_specular.xy;</span><br><span class="line">tangent.xy = uAnisoDirectionMapScaleBias.x * tangent.xy + uAnisoDirectionMapScaleBias.y;</span><br><span class="line"></span><br><span class="line"><span class="comment">// //rotate tangent</span></span><br><span class="line"><span class="comment">// // tangent.xy = tangent.x * uAnisoRotation.xy + tangent.y * uAnisoRotation.zw;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// //transform into render space</span></span><br><span class="line">tangent =	tangent.x * vertexTangent +</span><br><span class="line">			tangent.y * vertexBitangent;</span><br><span class="line"></span><br><span class="line"><span class="comment">// //project tangent onto normal plane</span></span><br><span class="line">tangent = tangent - normal*dot( tangent, normal );</span><br><span class="line">tangent = normalize( tangent );</span><br></pre></td></tr></table></figure>
-<h1 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h1><p>1(暂时不能展示)</p>
-<h5 id="继续优化效果"><a href="#继续优化效果" class="headerlink" title="继续优化效果"></a>继续优化效果</h5><p>和KK模型结合，加上一些根据切线法线方向的Noise来丰富头发高光的形状：</p>
-<p>1</p>
-
+<h1 id="介绍与原理"><a href="#介绍与原理" class="headerlink" title="介绍与原理"></a>介绍与原理</h1><p>CapsuleAO是增强人物在场景中融合感的一种手段，减少人物浮空在场景内的感觉。是由顽皮狗工作室在SIGGRAPH 2013中提出。主要方式是用多个胶囊体（Capsules）对动态物体（通常为带蒙皮的模型，比如角色等）进行模拟，以实现非直接光照环境下的动态软影模拟的技术。</p>
+<p>该技术的前身是用球谐函数来球形遮挡体的可见性进行模拟。顽皮狗使用胶囊体是因为胶囊体能更好地捕捉细长的几何结构，例如人物的四肢、栏杆等等。这使得 Capsule AO 在处理这些类型的几何体时能产生更准确、更自然的遮蔽效果。</p>
+<ul>
+<li>具体技术步骤：<ul>
+<li><strong>胶囊体近似:</strong> 为场景中的每个像素确定一个合适的胶囊体，这个胶囊体的方向和长度取决于周围的几何信息 (例如法线、深度)。</li>
+<li><strong>射线相交测试:</strong> 从胶囊体端点向场景中发射射线，检查射线是否与场景中的几何体相交。 相交的射线越多，该胶囊体周围的遮蔽就越强。</li>
+<li><strong>遮蔽值计算:</strong> 基于射线相交的结果，计算最终的 AO 值。 通常会使用一些权重函数来调整不同距离的遮蔽贡献。</li>
+</ul>
+</li>
+</ul>
+<p>可以理解为<strong>Capsule AO</strong> 是一种改进的 SSAO 技术，它通过使用胶囊体作为几何体近似，简化了，提高了遮蔽的准确性，减少了伪影，并实现了在实时渲染中的高效应用。</p>
+<h1 id="具体实现步骤"><a href="#具体实现步骤" class="headerlink" title="具体实现步骤"></a>具体实现步骤</h1><p>具体实现流程就是CPU收集胶囊体的信息的数组传递给shader，在传递的时候可以根据距离和权重进行剔除，过远或者不重要的人物的胶囊体就不绘制了。</p>
+<p>然后可以打包输出一张RT成为全局参数，在后续特定环境（比如说墙体和地板）shader进行渲染的时候在材质内采样，也可以直接用RenderFeature做在后处理的一个Pass里，可以说是各有利弊。</p>
+<h2 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h2>
       
     </div>
     <footer class="article-footer">
       
-<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shader/" rel="tag">Shader</a></li></ul>
+<ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TA/" rel="tag">TA</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B2%E6%9F%93/" rel="tag">渲染</a></li></ul>
 
     </footer>
 
@@ -98,19 +102,10 @@
   
 <nav class="article-nav">
   
-  <a href="/2025/01/26/CapluseAO/" class="article-nav-link">
-    <strong class="article-nav-caption">Newer</strong>
-    <div class="article-nav-title">
-      
-      【TA】CapluseAO在Unity里的实现
-      
-    </div>
-  </a>
   
-  
-  <a href="/2024/09/11/StylizedHighlight/" class="article-nav-link">
+  <a href="/2025/01/14/HighLightMarmosetModel/" class="article-nav-link">
     <strong class="article-nav-caption">Older</strong>
-    <div class="article-nav-title">【TA】可模拟各种形状的风格化高光</div>
+    <div class="article-nav-title">【TA】Marmoset头发高光Model复刻进Unity</div>
   </a>
   
 </nav>
