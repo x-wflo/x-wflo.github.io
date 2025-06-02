@@ -87,6 +87,7 @@
 <p>可以理解为<strong>Capsule AO</strong> 是一种改进的 SSAO 技术，它通过使用胶囊体作为几何体近似，简化了，提高了遮蔽的准确性，减少了伪影，并实现了在实时渲染中的高效应用。</p>
 <h1 id="具体实现步骤"><a href="#具体实现步骤" class="headerlink" title="具体实现步骤"></a>具体实现步骤</h1><p>具体实现流程就是CPU收集胶囊体的信息的数组传递给shader，在传递的时候可以根据距离和权重进行剔除，过远或者不重要的人物的胶囊体就不绘制了。</p>
 <p>然后可以打包输出一张RT成为全局参数，在后续特定环境（比如说墙体和地板）shader进行渲染的时候在材质内采样，也可以直接用RenderFeature做在后处理的一个Pass里，可以说是各有利弊。</p>
+<p><img src="动画.gif" alt="动画"></p>
 <h2 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h2>
       
     </div>
@@ -101,6 +102,15 @@
   
   
 <nav class="article-nav">
+  
+  <a href="/2025/05/02/VAT/" class="article-nav-link">
+    <strong class="article-nav-caption">Newer</strong>
+    <div class="article-nav-title">
+      
+      【TA】VAT动画及动画的混合
+      
+    </div>
+  </a>
   
   
   <a href="/2025/01/14/HighLightMarmosetModel/" class="article-nav-link">
