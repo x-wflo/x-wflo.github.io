@@ -75,7 +75,7 @@
   <div class="article-gallery-photos">
     
     
-    <img src="https://im.marieclaire.com.tw/m800c533h100b0/assets/mc/202110/61699FC786BAE1634312135.jpeg" itemprop="image">
+    <img src="https://x-wflo.github.io/2025/06/01/ShadowBlur/Snipaste_2025-06-14_20-44-19.png" itemprop="image">
     
     
   </div>
@@ -99,7 +99,7 @@
 <p><img src="image-20250614211428037.png" alt="image-20250614211428037" style="zoom:50%;" /></p>
 <p>用这个方法我们可以做二次元经常做的阴影边缘偏移红光效果。</p>
 <p><img src="image-20250614212129843.png" alt="image-20250614212129843"></p>
-<p>如果需要这种效果，最好还是不要做成全屏后处理，因为这种效果在比较软、粗糙、容易次表面散射的材质表面才会出现，如果皮衣上出现这种效果会比较怪。</p>
+<p>如果需要这种效果，最好还是不要在全屏后处理里做，可以分材质而动。因为这种效果在比较软、粗糙、容易次表面散射的材质表面才会出现，如果皮衣上出现这种效果会比较怪。</p>
 
       
     </div>
@@ -281,6 +281,21 @@
 
 <script src="/js/ocean.js"></script>
 
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        tex2jax: {
+            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            processEscapes: true
+        }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax();
+        for (var i = 0; i < all.length; ++i)
+            all[i].SourceElement().parentNode.className += ' has-jax';
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
