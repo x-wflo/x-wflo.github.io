@@ -75,9 +75,7 @@
       <p>一种更适合风格化效果的ToneMapping的实现。</p>
 <span id="more"></span>
 <h1 id="介绍与原理"><a href="#介绍与原理" class="headerlink" title="介绍与原理"></a>介绍与原理</h1><p>Unity提供的两种原生ToneMapping，Netural和ACES，其实都不适合需要强烈风格化的场景。</p>
-<h1 id="具体实现步骤"><a href="#具体实现步骤" class="headerlink" title="具体实现步骤"></a>具体实现步骤</h1><p>具体实现流程就是CPU收集胶囊体的信息的数组传递给shader，在传递的时候可以根据距离和权重进行剔除，过远或者不重要的人物的胶囊体就不绘制了。</p>
-<p>然后可以打包输出一张RT成为全局参数，在后续特定环境（比如说墙体和地板）shader进行渲染的时候在材质内采样，也可以直接用RenderFeature做在后处理的一个Pass里，可以说是各有利弊。</p>
-<h2 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h2>
+
       
     </div>
     <footer class="article-footer">
@@ -267,21 +265,6 @@
 
 <script src="/js/ocean.js"></script>
 
-<script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-        tex2jax: {
-            inlineMath: [ ["$","$"], ["\\(","\\)"] ],
-            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
-            processEscapes: true
-        }
-    });
-    MathJax.Hub.Queue(function() {
-        var all = MathJax.Hub.getAllJax();
-        for (var i = 0; i < all.length; ++i)
-            all[i].SourceElement().parentNode.className += ' has-jax';
-    });
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
 </body>
 
 </html>
